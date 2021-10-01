@@ -3,6 +3,8 @@
     "**/.yarn": true,
     "**/.pnp.*": true
   },
+  "licenser.author": "Clavicode Team",
+  "licenser.license": "GPLv3",
   "typescript.tsdk": ".yarn/sdks/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true
 }
