@@ -152,7 +152,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/express-serve-static-core@npm:^4.17.18":
+"@types/express-serve-static-core@npm:*, @types/express-serve-static-core@npm:^4.17.18":
   version: 4.17.24
   resolution: "@types/express-serve-static-core@npm:4.17.24"
   dependencies:
@@ -163,7 +163,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/express@npm:^4.17.13":
+"@types/express-ws@npm:^3.0.1":
+  version: 3.0.1
+  resolution: "@types/express-ws@npm:3.0.1"
+  dependencies:
+    "@types/express": "*"
+    "@types/express-serve-static-core": "*"
+    "@types/ws": "*"
+  checksum: fe0979f0c4ae6ce1d3cd6e9e5a99882d7dd461a774b3ad67066965db058bc9cc90ec9deed6bb4ee8414cf50b800ab84d6d042d375ee3b0b31483a3ec91647146
+  languageName: node
+  linkType: hard
+
+"@types/express@npm:*, @types/express@npm:^4.17.13":
   version: 4.17.13
   resolution: "@types/express@npm:4.17.13"
   dependencies:
@@ -235,6 +246,15 @@ __metadata:
     "@types/mime": ^1
     "@types/node": "*"
   checksum: eaca858739483e3ded254cad7d7a679dc2c8b3f52c8bb0cd845b3b7eb1984bde0371fdcb0a5c83aa12e6daf61b6beb762545021f520f08a1fe882a3fa4ea5554
+  languageName: node
+  linkType: hard
+
+"@types/ws@npm:*":
+  version: 8.2.0
+  resolution: "@types/ws@npm:8.2.0"
+  dependencies:
+    "@types/node": "*"
+  checksum: fb2f1cc1bc294607cf737a998a04d4eaca78b0a183905b879849c0e009f47ff4adaa6cbc7d9ac2d2ecc61652c8367e0f8bb02aab0af67a82e8c922746e96434b
   languageName: node
   linkType: hard
 
@@ -815,8 +835,10 @@ __metadata:
   resolution: "clavicode-backend@workspace:."
   dependencies:
     "@types/express": ^4.17.13
+    "@types/express-ws": ^3.0.1
     "@types/node": ^16.10.2
     express: ^4.17.1
+    express-ws: ^5.0.2
     nodemon: ^2.0.13
     ts-loader: ^9.2.6
     ts-node: ^10.2.1
@@ -1261,6 +1283,17 @@ __metadata:
     signal-exit: ^3.0.3
     strip-final-newline: ^2.0.0
   checksum: fba9022c8c8c15ed862847e94c252b3d946036d7547af310e344a527e59021fd8b6bb0723883ea87044dc4f0201f949046993124a42ccb0855cae5bf8c786343
+  languageName: node
+  linkType: hard
+
+"express-ws@npm:^5.0.2":
+  version: 5.0.2
+  resolution: "express-ws@npm:5.0.2"
+  dependencies:
+    ws: ^7.4.6
+  peerDependencies:
+    express: ^4.0.0 || ^5.0.0-alpha.1
+  checksum: a7134c51b6a630a369bbc7e06b6fad9ec174d535dd76c990ea6285e6cb08abad408ddb1162ba347ec5725fc483ae9f035f2eecb22ea91f3ecebff05772f62f0b
   languageName: node
   linkType: hard
 
@@ -3582,6 +3615,21 @@ typescript@^4.4.3:
     signal-exit: ^3.0.2
     typedarray-to-buffer: ^3.1.5
   checksum: c55b24617cc61c3a4379f425fc62a386cc51916a9b9d993f39734d005a09d5a4bb748bc251f1304e7abd71d0a26d339996c275955f527a131b1dcded67878280
+  languageName: node
+  linkType: hard
+
+"ws@npm:^7.4.6":
+  version: 7.5.5
+  resolution: "ws@npm:7.5.5"
+  peerDependencies:
+    bufferutil: ^4.0.1
+    utf-8-validate: ^5.0.2
+  peerDependenciesMeta:
+    bufferutil:
+      optional: true
+    utf-8-validate:
+      optional: true
+  checksum: bd2b437256012af526c69c03d6670a132e7ab0fe5853f3b7092826acea4203fad4ee2a8d0d9bd44834b2b968e747bf34f753ab535f4a3edf40d262da4b1d0805
   languageName: node
   linkType: hard
 

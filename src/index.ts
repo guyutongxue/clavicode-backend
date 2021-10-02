@@ -16,9 +16,10 @@
 // along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
 
 import express from 'express';
+import expressWs from 'express-ws';
 import { Request, Response } from 'express';
 
-const app = express();
+const app = expressWs(express()).app;
 const {
   PORT = 3000,
 } = process.env;
@@ -28,6 +29,16 @@ app.get('/', (req: Request, res: Response) => {
     message: 'hello world',
   });
 });
+app.ws('/socketTest', function (ws, req) {
+  ws.send(`{"message": "hello"}`);
+  ws.on('message', function (msg) {
+    const str = msg.toString();
+    ws.send(`{"message": "received ${str.length} bytes"}`);
+  });
+  ws.on('close', function(){
+    console.log('closed');
+  })
+})
 app.listen(PORT, () => {
   console.log('server started at http://localhost:' + PORT);
 });
