@@ -21,7 +21,7 @@ import { Request, Response } from 'express';
 
 const app = expressWs(express()).app;
 const {
-  PORT = 3000,
+  PORT = "3000",
 } = process.env;
 
 app.get('/', (req: Request, res: Response) => {
