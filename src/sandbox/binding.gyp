@@ -4,7 +4,7 @@
       'target_name': 'sandbox',
       'sources': [ 'src/main.cpp' ],
       'defines': [ 'V8_DEPRECATION_WARNINGS=1' ],
-      'cflags': [ 
+      'cflags_cc': [ 
         '-std=c++17',
         '-Wall',
         '-Wextra',

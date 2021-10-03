@@ -20,7 +20,11 @@ import expressWs from 'express-ws';
 import { Request, Response } from 'express';
 import sandbox from './sandbox';
 
-console.log(sandbox());
+console.log(sandbox('hello', {
+  arguments: ["abc", "def"],
+  max_cpu_time: 2000,
+  max_memory: 1024 * 1024 * 1024,
+}));
 
 const app = expressWs(express()).app;
 const {

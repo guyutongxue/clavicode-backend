@@ -15,6 +15,23 @@
 // You should have received a copy of the GNU General Public License
 // along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
 
-const sandbox: Function = require('./build/Release/sandbox.node');
+type SandboxConfig = {
+  input_path: string;
+  output_path: string;
+  arguments: string[];
+  environment: string[];
+  log_path: string;
+  uid: number;
+  gid: number;
+  max_cpu_time: number;
+  max_memory: number;
+  max_stack: number;
+  max_process_number: number;
+  max_output_size: number;
+};
+
+type Sandbox = (executable: string, config: Partial<SandboxConfig>) => number;
+
+const sandbox: Sandbox = require('./build/Release/sandbox.node');
 
 export default sandbox;

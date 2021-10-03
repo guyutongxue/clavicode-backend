@@ -1,0 +1,7 @@
+BasedOnStyle: Google
+ColumnLimit: 80
+PointerAlignment: Left
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowAllArgumentsOnNextLine: true
