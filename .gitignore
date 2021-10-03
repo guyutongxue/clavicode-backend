@@ -9,5 +9,5 @@
 !.yarn/versions
 
 # Build files
-build/*
-dist/*
+/build/
+/dist/

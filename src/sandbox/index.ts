@@ -15,33 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
 
-import express from 'express';
-import expressWs from 'express-ws';
-import { Request, Response } from 'express';
-import sandbox from './sandbox';
+const sandbox: Function = require('./build/Release/sandbox.node');
 
-console.log(sandbox());
-
-const app = expressWs(express()).app;
-const {
-  PORT = "3000",
-} = process.env;
-
-app.get('/', (req: Request, res: Response) => {
-  res.send({
-    message: 'hello world',
-  });
-});
-app.ws('/socketTest', function (ws, req) {
-  ws.send(`{"message": "hello"}`);
-  ws.on('message', function (msg) {
-    const str = msg.toString();
-    ws.send(`{"message": "received ${str.length} bytes"}`);
-  });
-  ws.on('close', function(){
-    console.log('closed');
-  })
-})
-app.listen(PORT, () => {
-  console.log('server started at http://localhost:' + PORT);
-});
+export default sandbox;
