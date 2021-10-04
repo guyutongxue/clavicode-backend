@@ -15,14 +15,7 @@ module.exports = {
       {
         test: /\.ts$/,
         use: ['ts-loader']
-      },
-      {
-        test: /\.node$/,
-        loader: "node-loader",
-        options: {
-          name: "[name].[ext]",
-        },
-      },
+      }
     ]
   },
   output: {
