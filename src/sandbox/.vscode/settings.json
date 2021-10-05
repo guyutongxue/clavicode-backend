@@ -1,0 +1,9 @@
+{
+  "cmake.debugConfig": {
+    "args": [
+      "--exe_path=../test/helloworld",
+      "--uid=12002",
+      "--gid=12002"
+    ]
+  }
+}
