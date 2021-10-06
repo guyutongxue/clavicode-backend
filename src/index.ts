@@ -18,6 +18,7 @@
 import express from 'express';
 import { Request, Response } from 'express';
 import expressWs from 'express-ws';
+import { languageServerHandler } from './language_server';
 import { f } from './sandbox_interface';
 
 f();
@@ -42,6 +43,9 @@ app.ws('/socketTest', function (ws, req) {
     console.log('closed');
   })
 })
+app.ws('/ws/languageServer/clangd', languageServerHandler);
+
+
 app.listen(PORT, () => {
   console.log('server started at http://localhost:' + PORT);
 });
