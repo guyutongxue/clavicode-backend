@@ -21,6 +21,23 @@ sudo apt install libseccomp-dev
 sudo apt install libboost-all-dev
 ```
 
+## Build
+
+```sh
+mkdir build && cd build
+cmake ..
+make
+```
+
+## Test
+
+```sh
+cd ../test
+make
+cd ../bin
+./sandbox --exe_path=../test/_chat
+```
+
 ## Acknowledgement
 
 `QingdaoU/Judger` by Qingdao University.

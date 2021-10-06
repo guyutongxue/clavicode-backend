@@ -1,5 +1,6 @@
 #include <boost/program_options.hpp>
 #include <iostream>
+#include <fstream>
 
 #include "config.h"
 #include "runner.h"
@@ -38,6 +39,7 @@ int main(int argc, char** argv) {
     OPTION_VEC(args, "Arguments")
     OPTION_VEC(env, "Environment variables")
     OPTION(log_path, "sandbox.log"s, "Log path")
+    OPTION(result_path, "result.json"s, "Result path")
     OPTION(uid, 65534, "User ID")
     OPTION(gid, 65534, "Group ID")
   ;
@@ -58,7 +60,7 @@ int main(int argc, char** argv) {
 
   if (vm.count("help")) {
     print_version();
-    std::clog << desc << std::endl;
+    std::cerr << desc << std::endl;
     std::exit(0);
   }
   if (vm.count("version")) {
@@ -73,5 +75,6 @@ int main(int argc, char** argv) {
 
   auto result{run(config)};
 
-  std::clog << result << std::endl;
+  std::ofstream ofs(config.result_path);
+  ofs << result << std::endl;
 }

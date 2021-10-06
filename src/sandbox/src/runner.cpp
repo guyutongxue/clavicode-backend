@@ -1,5 +1,6 @@
 #include "runner.h"
 
+#include <fcntl.h>
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -15,13 +16,18 @@
 #include "child.h"
 
 std::ostream& operator<<(std::ostream& os, const SandboxResult& result) {
-  os << "{\n    \"cpu_time\": " << result.cpu_time
-     << ",\n    \"real_time\": " << result.real_time
-     << ",\n    \"memory\": " << result.memory
-     << ",\n    \"signal\": " << result.signal
-     << ",\n    \"exit_code\": " << result.exit_code
-     << ",\n    \"error\": " << static_cast<int>(result.error)
-     << ",\n    \"result\": " << static_cast<int>(result.result) << "\n}";
+  if (result.error == ErrorType::SUCCESS) {
+    os << "{\n  \"success\": true"
+       << ",\n  \"cpu_time\": " << result.cpu_time
+       << ",\n  \"real_time\": " << result.real_time
+       << ",\n  \"memory\": " << result.memory
+       << ",\n  \"signal\": " << result.signal
+       << ",\n  \"exit_code\": " << result.exit_code
+       << ",\n  \"result\": " << static_cast<int>(result.result) << "\n}";
+  } else {
+    os << "{\n  \"success\": false"
+       << ",\n  \"error\": " << static_cast<int>(result.error) << "\n}";
+  }
   return os;
 }
 
@@ -46,10 +52,10 @@ SandboxResult run(const SandboxConfig& config) {
 
   SandboxResult result{};
 
-  uid_t uid{getuid()};
-  if (uid != 0L) {
-    error_exit(ErrorType::ROOT_REQUIRED);
-  }
+  // uid_t uid{getuid()};
+  // if (uid != 0L) {
+  //   error_exit(ErrorType::ROOT_REQUIRED);
+  // }
 
   if ((config.max_cpu_time < 1 && config.max_cpu_time != UNLIMITED) ||
       (config.max_real_time < 1 && config.max_real_time != UNLIMITED) ||
@@ -61,6 +67,14 @@ SandboxResult run(const SandboxConfig& config) {
     error_exit(ErrorType::INVALID_CONFIG);
   }
 
+  // Try to pipe io of child process to
+  int stdin_pipe[2];
+  int stdout_pipe[2];
+  int stderr_pipe[2];
+  if (pipe(stdin_pipe) < 0 || pipe(stdout_pipe) < 0 || pipe(stderr_pipe) < 0) {
+    error_exit(ErrorType::DUP2_FAILED);
+  }
+
   timeval start, end;
   gettimeofday(&start, nullptr);
 
@@ -70,9 +84,28 @@ SandboxResult run(const SandboxConfig& config) {
   }
   if (child_pid == 0) {
     // child process
+    close(stdin_pipe[1]);
+    close(stdout_pipe[0]);
+    close(stderr_pipe[0]);
+    if (dup2(stdin_pipe[0], STDIN_FILENO) < 0 ||
+        dup2(stdout_pipe[1], STDOUT_FILENO) < 0 ||
+        dup2(stderr_pipe[1], STDERR_FILENO) < 0) {
+      error_exit(ErrorType::DUP2_FAILED);
+    }
+    close(stdin_pipe[0]);
+    close(stdout_pipe[1]);
+    close(stderr_pipe[1]);
+    
     child(config);
   } else {
     // parent process
+
+    // prepare for forwarding child process's io
+    close(stdin_pipe[0]);
+    close(stdout_pipe[1]);
+    close(stderr_pipe[1]);
+    fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) | O_NONBLOCK);
+
     if (config.max_real_time != UNLIMITED) {
       std::thread killer([&]() {
         sleep((config.max_real_time + 1000) / 1000);
@@ -82,13 +115,67 @@ SandboxResult run(const SandboxConfig& config) {
     }
 
     int status;
+    int retval;
     rusage resource_usage;
-    if (wait4(child_pid, &status, WSTOPPED, &resource_usage) == -1) {
-      kill(child_pid, SIGKILL);
-      error_exit(ErrorType::WAIT_FAILED);
+
+    std::thread read_stdout([&]() {
+      int size;
+      char buf[256];
+      while ((size = read(stdout_pipe[0], buf, sizeof(buf)))) {
+        if (size == -1) {
+          if (errno != EINTR) {
+            kill(child_pid, SIGKILL);
+            error_exit(ErrorType::FORWARD_IO_FAILED);
+          }
+        } else {
+          write(STDOUT_FILENO, buf, size);
+        }
+      }
+      close(stdout_pipe[0]);
+    });
+    std::thread read_stderr([&]() {
+      char size;
+      char buf[256];
+      while ((size = read(stderr_pipe[0], buf, sizeof(buf)))) {
+        if (size == -1) {
+          if (errno != EINTR) {
+            kill(child_pid, SIGKILL);
+            error_exit(ErrorType::FORWARD_IO_FAILED);
+          }
+        } else {
+          write(STDERR_FILENO, buf, size);
+        }
+      }
+      close(stderr_pipe[0]);
+    });
+
+    while ((retval = wait4(child_pid, &status, WNOHANG | WSTOPPED,
+                           &resource_usage)) != child_pid) {
+      if (retval == -1) {
+        kill(child_pid, SIGKILL);
+        error_exit(ErrorType::WAIT_FAILED);
+      }
+
+      // Forward child process io
+      int size;
+      char buf[256];
+      if ((size = read(STDIN_FILENO, buf, sizeof(buf))) == -1) {
+        if (errno != EAGAIN && errno != EINTR) {
+          kill(child_pid, SIGKILL);
+          error_exit(ErrorType::FORWARD_IO_FAILED);
+        }
+      } else if (size == 0) {
+        // EOF
+        close(stdin_pipe[1]);
+      } else {
+        write(stdin_pipe[1], buf, size);
+      }
     }
+    read_stdout.join();
+    read_stderr.join();
 
     gettimeofday(&end, nullptr);
+
     result.real_time = static_cast<int>((end.tv_sec - start.tv_sec) * 1000 +
                                         (end.tv_usec - start.tv_usec) / 1000);
 

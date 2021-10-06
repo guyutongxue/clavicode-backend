@@ -178,17 +178,17 @@ ErrorType c_cpp_seccomp_rules(const SandboxConfig& config) {
   }
   BOOST_LOG_TRIVIAL(info) << "io redirect finish";
 
-  // set gid
-  gid_t group_list[]{config.gid};
-  if (setgid(config.gid) != 0 || setgroups(1, group_list) != 0) {
-    child_error_exit(ErrorType::SETUID_FAILED);
-  }
-  BOOST_LOG_TRIVIAL(info) << "gid: " << config.gid;
-  // set uid
-  if (setuid(config.uid) != 0) {
-    child_error_exit(ErrorType::SETUID_FAILED);
-  }
-  BOOST_LOG_TRIVIAL(info) << "uid: " << config.uid;
+  // // set gid
+  // gid_t group_list[]{config.gid};
+  // if (setgid(config.gid) != 0 || setgroups(1, group_list) != 0) {
+  //   child_error_exit(ErrorType::SETUID_FAILED);
+  // }
+  // BOOST_LOG_TRIVIAL(info) << "gid: " << config.gid;
+  // // set uid
+  // if (setuid(config.uid) != 0) {
+  //   child_error_exit(ErrorType::SETUID_FAILED);
+  // }
+  // BOOST_LOG_TRIVIAL(info) << "uid: " << config.uid;
 
   // load C/C++ seccomp rules
   if (c_cpp_seccomp_rules(config) != ErrorType::SUCCESS) {

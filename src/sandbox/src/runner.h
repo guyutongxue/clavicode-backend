@@ -18,6 +18,7 @@ struct SandboxConfig {
   std::vector<std::string> args;
   std::vector<std::string> env;
   std::string log_path;
+  std::string result_path;
   // std::string seccomp_rule_name;
   uid_t uid;
   gid_t gid;
@@ -31,6 +32,7 @@ enum class ErrorType {
   FORK_FAILED,
   PTHREAD_FAILED,
   WAIT_FAILED,
+  FORWARD_IO_FAILED,
   ROOT_REQUIRED,
   LOAD_SECCOMP_FAILED,
   SETRLIMIT_FAILED,
