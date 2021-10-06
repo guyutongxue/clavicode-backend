@@ -41,6 +41,7 @@ type CppCompileResponse = {
   status: 'error' | 'ok';
   error?: GccDiagnostics; // If status is 'error'
   executeToken?: string;  // If status is 'ok' and `execute` in request is true
+  expireDate?: string;    // If status is 'ok' and `execute` in request is true
 };
 ```
 
@@ -62,10 +63,28 @@ type CppDebugResponse = {
   status: 'error' | 'ok';
   error?: GccDiagnostics; // If status is 'error'
   debugToken?: string;    // If status is 'ok' 
+  expireDate?: string;    // If status is 'ok'
 }
 ```
 
 前端获取到 `debugToken` 后，将其作为 `$DEBUG_TOKEN` 以进行 WebSocket 交互。
+
+### Clangd 语言服务请求
+
+```
+POST $PREFIX/cpp/lsp
+```
+
+#### 格式
+
+```ts
+type CppLspRequest = {}
+type CppLspResponse = {
+  success: boolean;
+  token: string;      // If success is true
+  expireDate: string; // If success is true
+}
+```
 
 ### C++ 获取可执行文件
 
@@ -114,9 +133,10 @@ type WsExecuteS2C = {
   type: 'started';
 } | {
   type: 'closed';
-  retVal: number;
+  exitCode: number;
 } | {
-  type: 'timeout';
+  type: 'error';
+  reason: 'timeout' | 'violate' | 'other';
 } | {
   type: 'output';
   content: string;
@@ -154,9 +174,10 @@ type WsDebugGdbS2C = {
   type: 'started';
 } | {
   type: 'closed';
-  retVal: number;
+  exitCode: number;
 } | {
-  type: 'timeout';
+  type: 'error';
+  reason: 'timeout' | 'violate' | 'other';
 } | {
   type: 'response';
   response: GdbResponse
