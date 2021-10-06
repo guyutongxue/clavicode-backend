@@ -15,33 +15,24 @@
 // You should have received a copy of the GNU General Public License
 // along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
 
-import express from 'express';
-import { Request, Response } from 'express';
-import expressWs from 'express-ws';
-import { f } from './sandbox_interface';
+import cp from 'child_process';
+import path from 'path';
 
-f();
-
-const app = expressWs(express()).app;
-const {
-  PORT = "3000",
-} = process.env;
-
-app.get('/', (req: Request, res: Response) => {
-  res.send({
-    message: 'hello world',
+export function f() {
+  const sandbox_process = cp.spawn("./sandbox",
+    [
+      "--exe_path=../test/_chat"
+    ], {
+    stdio: 'pipe',
+    cwd: path.join(__dirname, "sandbox/bin")
   });
-});
-app.ws('/socketTest', function (ws, req) {
-  ws.send(`{"message": "hello"}`);
-  ws.on('message', function (msg) {
-    const str = msg.toString();
-    ws.send(`{"message": "received ${str.length} bytes"}`);
+  sandbox_process.stdout.on('data', (data: Buffer) => {
+    console.log("Data: ", data.toString('utf-8'));
   });
-  ws.on('close', function () {
-    console.log('closed');
-  })
-})
-app.listen(PORT, () => {
-  console.log('server started at http://localhost:' + PORT);
-});
+  sandbox_process.stderr.on('data', (data: Buffer) => {
+    console.log("Err: ", data.toString('utf-8'));
+  });
+  sandbox_process.stdin.write(Buffer.from("hello\n", 'utf-8'));
+  sandbox_process.stdin.write(Buffer.from("bye\n", 'utf-8'));
+  sandbox_process.stdin.emit('close');
+}
