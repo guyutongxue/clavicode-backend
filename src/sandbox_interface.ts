@@ -34,5 +34,8 @@ export function f() {
   });
   sandbox_process.stdin.write(Buffer.from("hello\n", 'utf-8'));
   sandbox_process.stdin.write(Buffer.from("bye\n", 'utf-8'));
-  sandbox_process.stdin.emit('close');
+  sandbox_process.stdin.end(); // send EOF
+  sandbox_process.on('exit', () => {
+    console.log("Exited");
+  })
 }
