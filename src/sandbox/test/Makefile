@@ -5,6 +5,7 @@ PROGS=\
 	_write\
 	_system\
 	_sleep\
+  _chat\
 
 CXX_FLAGS=\
 	-static\
