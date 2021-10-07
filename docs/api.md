@@ -168,6 +168,9 @@ type WsDebugGdbC2S = {
   type: 'request';
   request: string;
 } | {
+  type: 'input';
+  content: string;
+} | {
   type: 'shutdown';
 };
 type WsDebugGdbS2C = {
@@ -181,6 +184,9 @@ type WsDebugGdbS2C = {
 } | {
   type: 'response';
   response: GdbResponse
+} | {
+  type: 'output';
+  content: string;
 };
 ```
 
