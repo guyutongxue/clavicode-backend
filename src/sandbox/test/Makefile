@@ -5,10 +5,10 @@ PROGS=\
 	_write\
 	_system\
 	_sleep\
-  _chat\
+	_chat\
 
 CXX_FLAGS=\
-	-static\
+	-g -static\
 
 all: $(PROGS)
 .PHONY: all
