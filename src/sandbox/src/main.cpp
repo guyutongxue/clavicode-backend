@@ -1,15 +1,32 @@
+// Copyright (C) 2021 Clavicode Team
+//
+// This file is part of clavicode-backend.
+//
+// clavicode-backend is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// clavicode-backend is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
+
 #include <boost/program_options.hpp>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
 #include "config.h"
 #include "runner.h"
 
 using namespace std::literals;
 
-
 void print_version() {
-  std::clog << "Sandbox (used by clavicode-backend), v" PROJECT_VERSION << std::endl;
+  std::clog << "Sandbox (used by clavicode-backend), v" PROJECT_VERSION
+            << std::endl;
 }
 
 int main(int argc, char** argv) {
@@ -17,10 +34,12 @@ int main(int argc, char** argv) {
   po::options_description desc("Allowed options");
   SandboxConfig config;
 
-  #define OPTION(name, default_val, desc) \
-    (#name, po::value<decltype(config.name)>(&config.name)->default_value(default_val), desc)
-  #define OPTION_VEC(name, desc) \
-    (#name, po::value<decltype(config.name)>(&config.name)->composing(), desc)
+#define OPTION(name, default_val, desc)                                        \
+  (#name,                                                                      \
+   po::value<decltype(config.name)>(&config.name)->default_value(default_val), \
+   desc)
+#define OPTION_VEC(name, desc) \
+  (#name, po::value<decltype(config.name)>(&config.name)->composing(), desc)
 
   // clang-format off
   desc.add_options()
@@ -45,8 +64,8 @@ int main(int argc, char** argv) {
   ;
   // clang-format on
 
-  #undef OPTION
-  #undef OPTION_VEC
+#undef OPTION
+#undef OPTION_VEC
 
   po::variables_map vm;
   try {
@@ -69,7 +88,8 @@ int main(int argc, char** argv) {
   }
 
   if (config.exe_path.empty()) {
-    std::cerr << "Command line error: Executable path is not specified." << std::endl;
+    std::cerr << "Command line error: Executable path is not specified."
+              << std::endl;
     std::exit(1);
   }
 

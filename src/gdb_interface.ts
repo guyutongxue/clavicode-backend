@@ -1,6 +1,6 @@
 import pty from "node-pty";
 
-// Launch a psudeo-terminal, for gdb debuggee's io.
+// Launch a pseudo-terminal, for gdb debuggee's io.
 
 // Print current tty device name, and keep terminal open.
 const ptyProcess = pty.spawn("./utils/bin/pause", [], {
