@@ -104,7 +104,7 @@ ErrorType c_cpp_seccomp_rules(const SandboxConfig& config) {
 
 }  // namespace
 
-[[noreturn]] void child(SandboxConfig config) {
+[[noreturn]] void child(const SandboxConfig& config) {
   // max_stack
   if (config.max_stack != UNLIMITED) {
     rlimit r;
@@ -217,10 +217,10 @@ ErrorType c_cpp_seccomp_rules(const SandboxConfig& config) {
   char* argv[256]{};
   char* envp[256]{};
   for (auto i{0u}; i < config.args.size(); i++) {
-    argv[i] = config.args[i].data();
+    argv[i] = const_cast<char*>(config.args[i].c_str());
   }
   for (auto i{0u}; i < config.env.size(); i++) {
-    envp[i] = config.env[i].data();
+    envp[i] = const_cast<char*>(config.env[i].c_str());
   }
   // BOOST_LOG_TRIVIAL(info) << "copy argv & envp finish";
   execve(config.exe_path.c_str(), argv, envp);

@@ -19,5 +19,4 @@
 
 #include "runner.h"
 
-[[noreturn]]
-void child(SandboxConfig config);
+[[noreturn]] void child(const SandboxConfig& config);
