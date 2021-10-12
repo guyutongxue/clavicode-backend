@@ -4,6 +4,12 @@
 
 - `$PREFIX` 代表此项目的运行根目录。
 
+```ts
+type RuntimeError = 'timeout' | 'violate' | 'other';
+type GccDiagnostics = /* see devcpp7 */;
+type GdbResponse = /* see tsgdbmi */;
+```
+
 ## 前端访问
 
 ```
@@ -35,14 +41,26 @@ POST $PREFIX/cpp/compile
 ```ts
 type CppCompileRequest = {
   code: string;
-  execute: boolean;
+  execute: 'none' | 'file' | 'interactive';
 };
 type CppCompileResponse = {
-  status: 'error' | 'ok';
-  error?: GccDiagnostics; // If status is 'error'
-  executeToken?: string;  // If status is 'ok' and `execute` in request is true
-  expireDate?: string;    // If status is 'ok' and `execute` in request is true
-};
+  status: 'error';
+  errorType: 'compile' | 'link';
+  error: GccDiagnostics | string; // GccDiagnostic for 'compile', string for 'link' 
+} | {
+  status: 'ok';
+  execute: 'interactive'; // If `execute` in request is 'interactive'
+  executeToken?: string;
+  expireDate?: string;
+} | {
+  status: 'ok';
+  execute: 'file';        // If `execute` in request is 'file'
+  result: 'ok' | 'error';
+  exitCode?: number;      // If result is 'ok'
+  reason?: RuntimeError;  // If result is 'error'
+  stdout: string;
+  stderr: string;
+}
 ```
 
 前端获取到 `executeToken` 后，将其作为 `$EXECUTE_TOKEN` 以进行 WebSocket 交互。
@@ -136,9 +154,10 @@ type WsExecuteS2C = {
   exitCode: number;
 } | {
   type: 'error';
-  reason: 'timeout' | 'violate' | 'other';
+  reason: RuntimeError;
 } | {
   type: 'output';
+  stream: 'stdout' | 'stderr';
   content: string;
 }
 ```
@@ -180,10 +199,10 @@ type WsDebugGdbS2C = {
   exitCode: number;
 } | {
   type: 'error';
-  reason: 'timeout' | 'violate' | 'other';
+  reason: RuntimeError;
 } | {
   type: 'response';
-  response: GdbResponse
+  response: GdbResponse;
 } | {
   type: 'output';
   content: string;
