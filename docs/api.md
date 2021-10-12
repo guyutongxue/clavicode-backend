@@ -50,8 +50,8 @@ type CppCompileResponse = {
 } | {
   status: 'ok';
   execute: 'interactive'; // If `execute` in request is 'interactive'
-  executeToken?: string;
-  expireDate?: string;
+  executeToken: string;
+  expireDate: string;
 } | {
   status: 'ok';
   execute: 'file';        // If `execute` in request is 'file'
