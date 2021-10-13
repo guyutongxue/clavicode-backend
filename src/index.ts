@@ -20,19 +20,23 @@ import { Request, Response } from 'express';
 import expressWs from 'express-ws';
 import { languageServerHandler } from './language_server';
 import { f } from './sandbox_interface';
+import { TEMP_CLANGD_TOKEN } from './constant';
 
-f();
+// f();
 
 const app = expressWs(express()).app;
 const {
   PORT = "3000",
 } = process.env;
 
-app.get('/', (req: Request, res: Response) => {
-  res.send({
-    message: 'hello world',
-  });
-});
+// app.get('/', (req: Request, res: Response) => {
+//   res.send({
+//     message: 'hello world',
+//   });
+// });
+
+app.use(express.static('test'));
+
 app.ws('/socketTest', function (ws, req) {
   ws.send(`{"message": "hello"}`);
   ws.on('message', function (msg) {
@@ -43,7 +47,13 @@ app.ws('/socketTest', function (ws, req) {
     console.log('closed');
   })
 })
-app.ws('/ws/languageServer/clangd', languageServerHandler);
+app.ws('/ws/languageServer/clangd/:token', function (ws, req) {
+  if (req.params.token === TEMP_CLANGD_TOKEN) {
+    languageServerHandler(ws);
+  } else {
+    ws.close();
+  }
+});
 
 
 app.listen(PORT, () => {

@@ -16,21 +16,36 @@
 // along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
 
 import * as rpc from "@codingame/monaco-jsonrpc";
-import server from "@codingame/monaco-jsonrpc/lib/server"
+import * as server from "@codingame/monaco-jsonrpc/lib/server"
 import * as lsp from "vscode-languageserver";
 import ws from "ws";
+import * as cp from "child_process";
 
 const EXEC_PATH = "clangd";
 const ARGS = [
   "--query-driver=/usr/bin/g++-11"
 ];
 
+// https://github.com/CodinGame/monaco-jsonrpc/blob/master/src/server/launch.ts
+// Modified, make stderr silent.
+function createServerProcess(serverName: string, command: string, args: string[], options: cp.SpawnOptions): server.IConnection {
+  const serverProcess = cp.spawn(command, args, options);
+  serverProcess.on('error', error =>
+    console.error(`Launching ${serverName} Server failed: ${error}`)
+  );
+  serverProcess.stderr!.on('data', data => {
+    // console.error(`${serverName} Server: ${data}`)
+  });
+  return server.createProcessStreamConnection(serverProcess);
+}
+
+
 function launch(socket: rpc.IWebSocket, serverPath: string, env: NodeJS.ProcessEnv, args: string[]) {
   const reader = new rpc.WebSocketMessageReader(socket);
   const writer = new rpc.WebSocketMessageWriter(socket);
   const socketConnection = server.createConnection(reader, writer, () => socket.dispose());
-  const serverConnection = server.createServerProcess('C++', serverPath, args, {
-    env
+  const serverConnection = createServerProcess('C++', serverPath, args, {
+    env,
   });
   server.forward(socketConnection, serverConnection, message => {
     if (rpc.isRequestMessage(message)) {
