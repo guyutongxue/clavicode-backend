@@ -45,13 +45,11 @@ type CppCompileRequest = {
 };
 type CppCompileResponse = {
   status: 'error';
-  errorType: 'compile' | 'link';
-  error: GccDiagnostics | string; // GccDiagnostic for 'compile', string for 'link' 
+  errorType: 'compile' | 'link' | 'other';
+  error: GccDiagnostics | string; // GccDiagnostics for 'compile', string for others 
 } | {
   status: 'ok';
-  execute: 'interactive'; // If `execute` in request is 'interactive'
-  executeToken: string;
-  expireDate: string;
+  execute: 'none';        // If `execute` in request is 'none'
 } | {
   status: 'ok';
   execute: 'file';        // If `execute` in request is 'file'
@@ -60,7 +58,12 @@ type CppCompileResponse = {
   reason?: RuntimeError;  // If result is 'error'
   stdout: string;
   stderr: string;
-}
+} | {
+  status: 'ok';
+  execute: 'interactive'; // If `execute` in request is 'interactive'
+  executeToken: string;
+  expireDate: string;
+};
 ```
 
 前端获取到 `executeToken` 后，将其作为 `$EXECUTE_TOKEN` 以进行 WebSocket 交互。
