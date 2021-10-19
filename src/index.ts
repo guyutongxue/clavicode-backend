@@ -19,10 +19,10 @@ import express from 'express';
 import expressWs from 'express-ws';
 import { Request, Response } from 'express';
 
-const app = expressWs(express()).app;
+const app = expressWs(express()).app; //创建一个expressws对象
 const {
   PORT = "3000",
-} = process.env;
+} = process.env;   //默认端口为3000
 
 app.get('/', (req: Request, res: Response) => {
   res.send({
@@ -39,6 +39,7 @@ app.ws('/socketTest', function (ws, req) {
     console.log('closed');
   })
 })
+app.get()
 app.listen(PORT, () => {
   console.log('server started at http://localhost:' + PORT);
 });
