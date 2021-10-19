@@ -19,5 +19,5 @@ yarn start:dev
 
 ```
 yarn build
-yarn run
+yarn run:prod
 ```
