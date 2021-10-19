@@ -41,7 +41,8 @@ POST $PREFIX/cpp/compile
 ```ts
 type CppCompileRequest = {
   code: string;
-  execute: 'none' | 'file' | 'interactive';
+  execute: 'none' | 'file' | 'interactive' | 'debug';
+  stdin?: string;         // If execute is 'file'
 };
 type CppCompileResponse = {
   status: 'error';
@@ -63,30 +64,15 @@ type CppCompileResponse = {
   execute: 'interactive'; // If `execute` in request is 'interactive'
   executeToken: string;
   expireDate: string;
+} | {
+  status: 'ok';
+  execute: 'debug';       // If `execute` in request in 'debug'
+  debugToken: string;    // If status is 'ok' 
+  expireDate: string;    // If status is 'ok'
 };
 ```
 
 前端获取到 `executeToken` 后，将其作为 `$EXECUTE_TOKEN` 以进行 WebSocket 交互。
-
-### C++ 调试
-
-```
-POST $PREFIX/cpp/debug
-```
-
-#### 格式
-
-```ts
-type CppDebugRequest = {
-  code: string
-};
-type CppDebugResponse = {
-  status: 'error' | 'ok';
-  error?: GccDiagnostics; // If status is 'error'
-  debugToken?: string;    // If status is 'ok' 
-  expireDate?: string;    // If status is 'ok'
-}
-```
 
 前端获取到 `debugToken` 后，将其作为 `$DEBUG_TOKEN` 以进行 WebSocket 交互。
 
