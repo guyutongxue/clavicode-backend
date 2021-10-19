@@ -4,6 +4,12 @@
 
 - `$PREFIX` 代表此项目的运行根目录。
 
+```ts
+type RuntimeError = 'timeout' | 'violate' | 'other';
+type GccDiagnostics = /* see devcpp7 */;
+type GdbResponse = /* see tsgdbmi */;
+```
+
 ## 前端访问
 
 ```
@@ -35,37 +41,57 @@ POST $PREFIX/cpp/compile
 ```ts
 type CppCompileRequest = {
   code: string;
-  execute: boolean;
+  execute: 'none' | 'file' | 'interactive' | 'debug';
+  stdin?: string;         // If execute is 'file'
 };
 type CppCompileResponse = {
-  status: 'error' | 'ok';
-  error?: GccDiagnostics; // If status is 'error'
-  executeToken?: string;  // If status is 'ok' and `execute` in request is true
+  status: 'error';
+  errorType: 'compile' | 'link' | 'other';
+  error: GccDiagnostics | string; // GccDiagnostics for 'compile', string for others 
+} | {
+  status: 'ok';
+  execute: 'none';        // If `execute` in request is 'none'
+} | {
+  status: 'ok';
+  execute: 'file';        // If `execute` in request is 'file'
+  result: 'ok' | 'error';
+  exitCode?: number;      // If result is 'ok'
+  reason?: RuntimeError;  // If result is 'error'
+  stdout: string;
+  stderr: string;
+} | {
+  status: 'ok';
+  execute: 'interactive'; // If `execute` in request is 'interactive'
+  executeToken: string;
+  expireDate: string;
+} | {
+  status: 'ok';
+  execute: 'debug';       // If `execute` in request in 'debug'
+  debugToken: string;    // If status is 'ok' 
+  expireDate: string;    // If status is 'ok'
 };
 ```
 
 前端获取到 `executeToken` 后，将其作为 `$EXECUTE_TOKEN` 以进行 WebSocket 交互。
 
-### C++ 调试
+前端获取到 `debugToken` 后，将其作为 `$DEBUG_TOKEN` 以进行 WebSocket 交互。
+
+### Clangd 语言服务请求
 
 ```
-POST $PREFIX/cpp/debug
+POST $PREFIX/cpp/lsp
 ```
 
 #### 格式
 
 ```ts
-type CppDebugRequest = {
-  code: string
-};
-type CppDebugResponse = {
-  status: 'error' | 'ok';
-  error?: GccDiagnostics; // If status is 'error'
-  debugToken?: string;    // If status is 'ok' 
+type CppLspRequest = {}
+type CppLspResponse = {
+  success: boolean;
+  token: string;      // If success is true
+  expireDate: string; // If success is true
 }
 ```
-
-前端获取到 `debugToken` 后，将其作为 `$DEBUG_TOKEN` 以进行 WebSocket 交互。
 
 ### C++ 获取可执行文件
 
@@ -114,11 +140,13 @@ type WsExecuteS2C = {
   type: 'started';
 } | {
   type: 'closed';
-  retVal: number;
+  exitCode: number;
 } | {
-  type: 'timeout';
+  type: 'error';
+  reason: RuntimeError;
 } | {
   type: 'output';
+  stream: 'stdout' | 'stderr';
   content: string;
 }
 ```
@@ -148,18 +176,25 @@ type WsDebugGdbC2S = {
   type: 'request';
   request: string;
 } | {
+  type: 'input';
+  content: string;
+} | {
   type: 'shutdown';
 };
 type WsDebugGdbS2C = {
   type: 'started';
 } | {
   type: 'closed';
-  retVal: number;
+  exitCode: number;
 } | {
-  type: 'timeout';
+  type: 'error';
+  reason: RuntimeError;
 } | {
   type: 'response';
-  response: GdbResponse
+  response: GdbResponse;
+} | {
+  type: 'output';
+  content: string;
 };
 ```
 

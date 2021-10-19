@@ -18,6 +18,9 @@ module.exports = {
       }
     ]
   },
+  node: {
+    __dirname: true
+  },
   output: {
     path: path.resolve(__dirname, NODE_ENV === 'production' ? 'dist' : 'build'),
     filename: 'index.js'
