@@ -51,6 +51,7 @@ type CppCompileResponse = {
 } | {
   status: 'ok';
   execute: 'none';        // If `execute` in request is 'none'
+  error: GccDiagnostics;  // Compile warning, [] if none
 } | {
   status: 'ok';
   execute: 'file';        // If `execute` in request is 'file'
