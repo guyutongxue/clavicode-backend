@@ -47,9 +47,6 @@ app.ws('/socketTest', function (ws, req) {
     console.log('closed');
   })
 })
-<<<<<<< HEAD
-app.get()
-=======
 app.ws('/ws/languageServer/clangd/:token', function (ws, req) {
   if (req.params.token === TEMP_CLANGD_TOKEN) {
     languageServerHandler(ws);
@@ -58,8 +55,9 @@ app.ws('/ws/languageServer/clangd/:token', function (ws, req) {
   }
 });
 
-
->>>>>>> 98c0112aa3d3468d010d8459fca65dafb6b10d70
+app.post('/cpp/complie',function(req:Request,res:Response){
+    
+})
 app.listen(PORT, () => {
   console.log('server started at http://localhost:' + PORT);
 });
