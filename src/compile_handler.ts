@@ -114,9 +114,19 @@ async function doCompile(code: string, debugInfo = false):Promise<compileResult>
   
 }
 
-export function compileHandler(req: CppCompileRequest) {
+export function compileHandler(code:string,execute:boolean,stdin:string) {
   console.log('Receive complie request');
-  const result = doCompile(req.code);
+  const complieresult:compileResult = doCompile(code) as any;
+  if(complieresult.status=='ok'){//编译成功
+    if(execute){
 
+    }
+    else{
+      
+    }
+  }
+  else{
+
+  }
 }
 
