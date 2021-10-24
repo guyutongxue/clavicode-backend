@@ -16,5 +16,9 @@
     "only-warn",
     "@typescript-eslint"
   ],
-  "rules": {}
+  "rules": {
+    "semi": [
+      1
+    ]
+  }
 }
