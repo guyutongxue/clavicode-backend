@@ -18,7 +18,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { execFile } from 'child_process';
-import { CppCompileRequest, CppCompileResponse, GccDiagnostics, } from './api';
+import { CppCompileFileResponse, CppCompileNoneResponse, CppCompileRequest, CppCompileResponse, GccDiagnostics, } from './api';
 import * as tmp from 'tmp';
 import { fileExecution } from './file_execution';
 
@@ -116,7 +116,6 @@ async function doBuild(code: string, debugInfo = false): Promise<BuildResult> {
   // generate .o
   const compileResult = await execCompiler(tmpSrcFile.name, true, debugInfo);
   tmpSrcFile.removeCallback();
-
   let diagnostics: GccDiagnostics;
   try {
     diagnostics = JSON.parse(compileResult.stderr);
@@ -155,7 +154,6 @@ async function doBuild(code: string, debugInfo = false): Promise<BuildResult> {
   }
 
 }
-
 export async function compileHandler(request: CppCompileRequest): Promise<CppCompileResponse> {
   console.log('Receive compile request');
   const compileResult = await doBuild(request.code, request.execute === 'debug');
@@ -168,18 +166,19 @@ export async function compileHandler(request: CppCompileRequest): Promise<CppCom
   }
   switch (request.execute) {
     case 'none': {
-      return {
+      return <CppCompileNoneResponse>{
         status: 'ok',
-        execute: request.execute
+        execute: request.execute,
+        error: compileResult.error
       };
     }
     case 'file': {
       const stdin = request.stdin ?? "";
-      fileExecution(compileResult.filename, stdin);
-      return {
-        status: 'error',
-        errorType: 'other',
-        error: 'not implemented'
+      const executionResult = await fileExecution(compileResult.filename, stdin);
+      return <CppCompileFileResponse>{
+        ...executionResult,
+        status: 'ok',
+        execute: 'file',
       };
     }
     case 'debug':

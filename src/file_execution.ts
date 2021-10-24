@@ -19,14 +19,31 @@
 import * as fs from 'fs';
 import * as tmp from 'tmp';
 import { execFile } from 'child_process';
+import { CppCompileFileResponse, RuntimeError } from './api';
+type Result = {
+  success: boolean;
+  cpu_time: number;
+  real_time: number;
+  memory: number;
+  signal: number;
+  exit_code: number;
+  result: number;
 
-export function fileExecution(exePath: string, stdin: string) {
+};
+
+type FileExecutionResponse = {
+  result: 'ok' | 'error';
+  exitCode?: number;      // If result is 'ok'
+  reason?: RuntimeError;  // If result is 'error'
+  stdout: string;
+  stderr: string;
+}
+
+export function fileExecution(exePath: string, stdin: string): Promise<FileExecutionResponse> {
   const tmpStdinFile = tmp.fileSync({
     postfix: ".txt"
   });
-  if (stdin) {
-    fs.writeFileSync(tmpStdinFile.fd, stdin);
-  }
+  fs.writeFileSync(tmpStdinFile.fd, stdin);
   const tmpStderrFile = tmp.fileSync({
     postfix: ".txt"
   });
@@ -34,37 +51,79 @@ export function fileExecution(exePath: string, stdin: string) {
     postfix: ".txt"
   });
   const tmpResultFile = tmp.fileSync({
-    postfix: ".txt"
+    postfix: ".json"
   });
-  execFile('./sandbox/bin/sandbox', [
-    `--exe_path=${exePath}`,
-    '--max_real_time=1000',
-    `--input_path=${tmpStdinFile}`,
-    `--output_path=${tmpStdoutFile}`,
-    `--error_path=${tmpStderrFile}`,
-    `result_path=${tmpResultFile}`],
-    (error) => {
-      if (error) {
-        console.log('fail to execute');
-        return {
-          success: false,
-          errorType: 'execute',
-          error: error,
-        };
-      }
-      else {// 成功执行文件
-        const stdout = fs.readFileSync(tmpStdoutFile.name);
-        const stderr = fs.readFileSync(tmpStderrFile.name);
-        const result = fs.readFileSync(tmpResultFile.name);
-        tmpStdoutFile.removeCallback();
-        tmpStderrFile.removeCallback();
-        tmpResultFile.removeCallback();
-        return {
-          success: true,
-          stdout: stdout,
-          stderr: stderr,
-          result: result,
-        };
-      }
-    });
+  return new Promise((resolve) => {
+    execFile('./sandbox/bin/sandbox', [
+      `--exe_path=${exePath}`,
+      '--max_real_time=1000',
+      `--input_path=${tmpStdinFile}`,
+      `--output_path=${tmpStdoutFile}`,
+      `--error_path=${tmpStderrFile}`,
+      `--result_path=${tmpResultFile}`
+    ],
+      (error) => {
+        if (error) {//在运行“执行文件函数”的过程中出现错误，基本不可能发生
+          console.log('fail to execute');
+          resolve({
+            result: 'error',
+            reason: 'system',
+            stderr: 'none',
+            stdout: 'none',
+
+          });
+        }
+        else {// 成功执行文件
+          const stdout = fs.readFileSync(tmpStdoutFile.name).toString();
+          const stderr = fs.readFileSync(tmpStderrFile.name).toString();
+          const result: Result = JSON.parse(fs.readFileSync(tmpResultFile.name).toString());
+          tmpStdoutFile.removeCallback();
+          tmpStderrFile.removeCallback();
+          tmpResultFile.removeCallback();
+          if (result.success) {//运行成功，顺利返回
+            resolve({
+              stdout: stdout,
+              stderr: stderr,
+              exitCode: result.exit_code,
+              result: 'ok',
+            });
+          } else {//执行失败，查看result
+            if (result.result === 1 || result.result === 2) {//CPU_TIME_LIMIT_EXCEEDED,
+              // REAL_TIME_LIMIT_EXCEEDED,
+              resolve({
+                result: 'error',
+                reason: 'timeout',
+                stdout: stdout,
+                stderr: stderr,
+              });
+            } else if (result.result === 3) {//MEMORY_LIMIT_EXCEEDED,
+              resolve({
+                result: 'error',
+                reason: 'memout',
+                stdout: stdout,
+                stderr: stderr,
+              });
+            }
+            else if(result.result===4){
+              if(result.signal===31){
+                resolve({
+                  result: 'error',
+                  reason: 'violate',
+                  stdout: stdout,
+                  stderr: stderr,
+                });
+              }
+              else{
+                resolve({
+                  result: 'error',
+                  reason: 'other',
+                  stdout: stdout,
+                  stderr: stderr,
+                });
+              }
+            }
+          }
+        }
+      });
+  });
 }
