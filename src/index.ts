@@ -22,7 +22,7 @@ import { languageServerHandler } from './language_server';
 import { f } from './sandbox_interface';
 import { TEMP_CLANGD_TOKEN } from './constant';
 import { CppCompileRequest, CppCompileResponse } from './api';
-import { compileHandler, CompileOrExecute } from './compile_handler';
+import { compileHandler } from './compile_handler';
 // f();
 
 const app = expressWs(express()).app; //创建一个expressws对象
