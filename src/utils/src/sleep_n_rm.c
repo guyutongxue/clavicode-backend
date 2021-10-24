@@ -17,11 +17,16 @@
  * along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
-int main(void) {
-  system("tty");
-  pause();
+int main(int argc, char** argv) {
+  if (argc != 3) {
+    fprintf(stderr, "Usage: %s <seconds> <file>\n", argv[0]);
+    return EXIT_FAILURE;
+  }
+  sleep(atoi(argv[1]));
+  unlink(argv[2]);
   return EXIT_SUCCESS;
 }

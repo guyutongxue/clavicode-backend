@@ -1,7 +1,13 @@
-all: bin/pause
+PROGS=\
+	bin/pause\
+	bin/sleep_n_rm
 
-bin/pause: src/pause.c
-	$(CC) -o $@ $^
+all: $(PROGS)
+.PHONY: all
+.PHONY: clean
+
+bin/%: src/%.c
+	$(CC) -o $@ $<
 
 clean:
-	rm -f bin/pause
+	rm -f $(PROGS)
