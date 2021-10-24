@@ -3,12 +3,13 @@ import * as fs from 'fs';
 import { execFile, spawn } from 'child_process';
 import { CppCompileRequest, GccDiagnostics, CppCompileResponse } from './api';
 import * as tmp from 'tmp';
+
 type ExecCompilerResult = {
   success: boolean,
   stderr: string,
 }
 
-type CompileResult = {
+type BuildResult = {
   success: false;
   errorType: 'compile' | 'link' | 'other';
   error: string;
@@ -80,29 +81,30 @@ function execCompiler(srcPath: string, noLink: boolean, debugInfo: boolean): Pro
     )
   });
 }
-async function doCompile(code: string, debugInfo = false): Promise<CompileResult> {
+
+async function doBuild(code: string, debugInfo = false): Promise<BuildResult> {
   console.log('Compile begin, generate .o')
   const tmpSrcFile = tmp.fileSync({
     postfix: ".cpp"
   });
   fs.writeSync(tmpSrcFile.fd, code);
-  const execResult = await execCompiler(tmpSrcFile.name, true, debugInfo);
+  const compileResult = await execCompiler(tmpSrcFile.name, true, debugInfo);
   tmpSrcFile.removeCallback();
   let diagnostics: GccDiagnostics = [];
   try {
-    diagnostics = JSON.parse(execResult.stderr);
-    if (!execResult.success) {
+    diagnostics = JSON.parse(compileResult.stderr);
+    if (!compileResult.success) {
       return {
         success: false,
         errorType: 'compile',
-        error: execResult.stderr,
+        error: compileResult.stderr,
       }
     }
   } catch (e) {
     return {
       success: false,
       errorType: 'compile',
-      error: execResult.stderr,
+      error: compileResult.stderr,
     }
   }
 
@@ -126,7 +128,7 @@ async function doCompile(code: string, debugInfo = false): Promise<CompileResult
 
 export async function compileHandler(code: string, execute: boolean, stdin: string) {
   console.log('Receive compile request');
-  const compileResult = await doCompile(code);
+  const compileResult = await doBuild(code);
   if (compileResult.success) {//编译成功
     if (execute) {
     }
