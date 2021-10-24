@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(sandbox VERSION 1.0.0)
+project(sandbox VERSION 1.0.1)
 
 find_package(Boost REQUIRED COMPONENTS program_options log_setup log)
 

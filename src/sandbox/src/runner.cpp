@@ -208,9 +208,9 @@ SandboxResult run(const SandboxConfig& config) {
           static_cast<int>(resource_usage.ru_utime.tv_sec * 1000 +
                            resource_usage.ru_utime.tv_usec / 1000);
       result.memory = resource_usage.ru_maxrss * 1024;
-      if (result.exit_code) {
-        result.result = ResultType::RUNTIME_ERROR;
-      }
+      // if (result.exit_code) {
+      //   result.result = ResultType::RUNTIME_ERROR;
+      // }
       if (result.signal == SIGSEGV) {
         if (config.max_memory != UNLIMITED &&
             result.memory > config.max_memory) {
