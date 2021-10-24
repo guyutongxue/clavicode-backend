@@ -37,26 +37,29 @@ interface GccDiagnostic {
 }
 export type GccDiagnostics = GccDiagnostic[];
 
+export type RuntimeError = 'timeout' | 'memout' | 'violate' | 'system';
 
 type CppCompileRequest = {
   code: string;
   execute: 'none' | 'file' | 'interactive' | 'debug';
   stdin?: string;         // If execute is 'file'
 };
-type CppCompileResponse = CppCompileErrorResponse | CppCompileNoneResponse;
+type CppCompileResponse = CppCompileErrorResponse | CppCompileNoneResponse|
+CppCompileFileResponse|CppCompileInteractiveResponse|
+CppCompileInteractiveResponse|CppCompileDebugResponse;
 
-type CppCompileErrorResponse = {
+export type CppCompileErrorResponse = {
   status: 'error';
   errorType: 'compile' | 'link' | 'other';
   error: GccDiagnostics | string; // GccDiagnostics for 'compile', string for others 
 };
 
-type CppCompileNoneResponse = {
+export type CppCompileNoneResponse = {
   status: 'ok';
   execute: 'none';        // If `execute` in request is 'none'
   error: GccDiagnostics;  // Compile warning, [] if none
 };
-type CppCompileFileResponse = {
+export type CppCompileFileResponse = {
   status: 'ok';
   execute: 'file';        // If `execute` in request is 'file'
   error: GccDiagnostics;  // Compile warning, [] if none
@@ -66,14 +69,14 @@ type CppCompileFileResponse = {
   stdout: string;
   stderr: string;
 }
-type CppCompileInteractiveResponse = {
+export type CppCompileInteractiveResponse = {
   status: 'ok';
   execute: 'interactive'; // If `execute` in request is 'interactive'
   error: GccDiagnostics;  // Compile warning, [] if none
   executeToken: string;
   expireDate: string;
 }
-type CppCompileDebugResponse = {
+export type CppCompileDebugResponse = {
   status: 'ok';
   execute: 'debug';       // If `execute` in request in 'debug'
   error: GccDiagnostics;  // Compile warning, [] if none
