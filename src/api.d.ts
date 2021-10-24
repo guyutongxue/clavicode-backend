@@ -1,4 +1,3 @@
-import { type } from 'os';
 import { GdbResponse } from 'tsgdbmi';
 
 interface GccDiagnosticPosition {
@@ -37,52 +36,56 @@ interface GccDiagnostic {
 }
 export type GccDiagnostics = GccDiagnostic[];
 
-export type RuntimeError = 'timeout' | 'memout' | 'violate' | 'system' | 'other' ;
+export type RuntimeError = 'timeout' | 'memout' | 'violate' | 'system' | 'other';
 
-type CppCompileRequest = {
+export type CppCompileRequest = {
   code: string;
   execute: 'none' | 'file' | 'interactive' | 'debug';
   stdin?: string;         // If execute is 'file'
 };
-type CppCompileResponse = CppCompileErrorResponse | CppCompileNoneResponse|
-CppCompileFileResponse|CppCompileInteractiveResponse|
-CppCompileInteractiveResponse|CppCompileDebugResponse;
+export type CppCompileResponse =
+  CppCompileErrorResponse |
+  CppCompileNoneResponse |
+  CppCompileFileResponse |
+  CppCompileInteractiveResponse |
+  CppCompileInteractiveResponse |
+  CppCompileDebugResponse;
 
 export type CppCompileErrorResponse = {
   status: 'error';
   errorType: 'compile' | 'link' | 'other';
-  error: GccDiagnostics | string; // GccDiagnostics for 'compile', string for others 
+  error: GccDiagnostics | string;
 };
 
-export type CppCompileNoneResponse = {
+type CppCompileOkResponseBase<T extends CppCompileRequest.execute> = {
   status: 'ok';
-  execute: 'none';        // If `execute` in request is 'none'
-  error: GccDiagnostics;  // Compile warning, [] if none
-};
-export type CppCompileFileResponse = {
-  status: 'ok';
-  execute: 'file';        // If `execute` in request is 'file'
-  error: GccDiagnostics;  // Compile warning, [] if none
-  result: 'ok' | 'error';
-  exitCode?: number;      // If result is 'ok'
-  reason?: RuntimeError;  // If result is 'error'
+  execute: T;
+  error: GccDiagnostics;
+}
+
+export type CppCompileNoneResponse = CppCompileOkResponseBase<'none'>;
+
+export type FileExecutionResult = ({
+  result: 'ok';
+  exitCode: number;
+} | {
+  result: 'error';
+  reason: RuntimeError;
+}) & {
   stdout: string;
   stderr: string;
-}
+};
+export type CppCompileFileResponse = FileExecutionResult & CppCompileOkResponseBase<'file'>;
+
 export type CppCompileInteractiveResponse = {
-  status: 'ok';
-  execute: 'interactive'; // If `execute` in request is 'interactive'
-  error: GccDiagnostics;  // Compile warning, [] if none
   executeToken: string;
   expireDate: string;
-}
+} & CppCompileOkResponseBase<'interactive'>;
+
 export type CppCompileDebugResponse = {
-  status: 'ok';
-  execute: 'debug';       // If `execute` in request in 'debug'
-  error: GccDiagnostics;  // Compile warning, [] if none
-  debugToken: string;     // If status is 'ok' 
-  expireDate: string;     // If status is 'ok'
-};
+  debugToken: string;
+  expireDate: string;
+} & CppCompileOkResponseBase<'debug'>;
 
 type WsExecuteC2S = {
   type: 'start';

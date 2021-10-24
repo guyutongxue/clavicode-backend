@@ -19,8 +19,11 @@
 import * as fs from 'fs';
 import * as tmp from 'tmp';
 import { execFile } from 'child_process';
-import { CppCompileFileResponse, RuntimeError } from './api';
-type Result = {
+import { FileExecutionResult } from './api';
+import path from 'path';
+import { constants } from 'os';
+
+type SandboxResult = {
   success: boolean;
   cpu_time: number;
   real_time: number;
@@ -31,15 +34,7 @@ type Result = {
 
 };
 
-type FileExecutionResponse = {
-  result: 'ok' | 'error';
-  exitCode?: number;      // If result is 'ok'
-  reason?: RuntimeError;  // If result is 'error'
-  stdout: string;
-  stderr: string;
-}
-
-export function fileExecution(exePath: string, stdin: string): Promise<FileExecutionResponse> {
+export function fileExecution(exePath: string, stdin: string): Promise<FileExecutionResult> {
   const tmpStdinFile = tmp.fileSync({
     postfix: ".txt"
   });
@@ -54,7 +49,7 @@ export function fileExecution(exePath: string, stdin: string): Promise<FileExecu
     postfix: ".json"
   });
   return new Promise((resolve) => {
-    execFile('./sandbox/bin/sandbox', [
+    execFile(path.join(__dirname, 'sandbox/bin/sandbox'), [
       `--exe_path=${exePath}`,
       '--max_real_time=1000',
       `--input_path=${tmpStdinFile}`,
@@ -63,65 +58,71 @@ export function fileExecution(exePath: string, stdin: string): Promise<FileExecu
       `--result_path=${tmpResultFile}`
     ],
       (error) => {
-        if (error) {//在运行“执行文件函数”的过程中出现错误，基本不可能发生
-          console.log('fail to execute');
+        if (error) {
+          // 沙盒主进程崩溃
+          console.log('Fail to execute');
           resolve({
             result: 'error',
             reason: 'system',
-            stderr: 'none',
-            stdout: 'none',
-
+            stderr: '',
+            stdout: ''
           });
-        }
-        else {// 成功执行文件
-          const stdout = fs.readFileSync(tmpStdoutFile.name).toString();
-          const stderr = fs.readFileSync(tmpStderrFile.name).toString();
-          const result: Result = JSON.parse(fs.readFileSync(tmpResultFile.name).toString());
-          tmpStdoutFile.removeCallback();
-          tmpStderrFile.removeCallback();
-          tmpResultFile.removeCallback();
-          if (result.success) {//运行成功，顺利返回
+        } else {
+          // 沙盒执行完成
+          try {
+            const resultIo = {
+              stdout: fs.readFileSync(tmpStdoutFile.name, 'utf-8'),
+              stderr: fs.readFileSync(tmpStderrFile.name, 'utf-8')
+            };
+            const result: SandboxResult = JSON.parse(fs.readFileSync(tmpResultFile.name, 'utf-8'));
+            tmpStdoutFile.removeCallback();
+            tmpStderrFile.removeCallback();
+            tmpResultFile.removeCallback();
+            if (result.success) {
+              // 运行成功，顺利返回
+              resolve({
+                result: 'ok',
+                exitCode: result.exit_code,
+                ...resultIo
+              });
+            } else {
+              // 运行失败，查看result
+              if (result.result === 1 || result.result === 2) {
+                // CPU_TIME_LIMIT_EXCEEDED, REAL_TIME_LIMIT_EXCEEDED,
+                resolve({
+                  result: 'error',
+                  reason: 'timeout',
+                  ...resultIo
+                });
+              } else if (result.result === 3) {
+                // MEMORY_LIMIT_EXCEEDED
+                resolve({
+                  result: 'error',
+                  reason: 'memout',
+                  ...resultIo
+                });
+              } else if (result.result === 4) {
+                // RUNTIME_ERROR
+                resolve({
+                  result: 'error',
+                  reason: result.signal === constants.signals.SIGSYS ? 'violate' : 'other',
+                  ...resultIo
+                });
+              } else {
+                resolve({
+                  result: 'error',
+                  reason: 'system',
+                  ...resultIo
+                });
+              }
+            }
+          } catch (_) {
             resolve({
-              stdout: stdout,
-              stderr: stderr,
-              exitCode: result.exit_code,
-              result: 'ok',
+              result: 'error',
+              reason: 'system',
+              stderr: '',
+              stdout: ''
             });
-          } else {//执行失败，查看result
-            if (result.result === 1 || result.result === 2) {//CPU_TIME_LIMIT_EXCEEDED,
-              // REAL_TIME_LIMIT_EXCEEDED,
-              resolve({
-                result: 'error',
-                reason: 'timeout',
-                stdout: stdout,
-                stderr: stderr,
-              });
-            } else if (result.result === 3) {//MEMORY_LIMIT_EXCEEDED,
-              resolve({
-                result: 'error',
-                reason: 'memout',
-                stdout: stdout,
-                stderr: stderr,
-              });
-            }
-            else if(result.result===4){
-              if(result.signal===31){
-                resolve({
-                  result: 'error',
-                  reason: 'violate',
-                  stdout: stdout,
-                  stderr: stderr,
-                });
-              }
-              else{
-                resolve({
-                  result: 'error',
-                  reason: 'other',
-                  stdout: stdout,
-                  stderr: stderr,
-                });
-              }
-            }
           }
         }
       });
