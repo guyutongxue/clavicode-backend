@@ -75,6 +75,7 @@ type CppCompileResponse = {
 } | {
   status: 'ok';
   execute: 'file';        // If `execute` in request is 'file'
+  error: GccDiagnostics;  // Compile warning, [] if none
   result: 'ok' | 'error';
   exitCode?: number;      // If result is 'ok'
   reason?: RuntimeError;  // If result is 'error'
@@ -83,13 +84,15 @@ type CppCompileResponse = {
 } | {
   status: 'ok';
   execute: 'interactive'; // If `execute` in request is 'interactive'
+  error: GccDiagnostics;  // Compile warning, [] if none
   executeToken: string;
   expireDate: string;
 } | {
   status: 'ok';
   execute: 'debug';       // If `execute` in request in 'debug'
-  debugToken: string;    // If status is 'ok' 
-  expireDate: string;    // If status is 'ok'
+  error: GccDiagnostics;  // Compile warning, [] if none
+  debugToken: string;     // If status is 'ok' 
+  expireDate: string;     // If status is 'ok'
 };
 ```
 

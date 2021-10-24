@@ -1,30 +1,44 @@
+// Copyright (C) 2021 Clavicode Team
+// 
+// This file is part of clavicode-backend.
+// 
+// clavicode-backend is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// clavicode-backend is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
+
 import * as path from 'path';
 import * as fs from 'fs';
 import { execFile } from 'child_process';
-import { GccDiagnostics, } from './api';
+import { CppCompileRequest, CppCompileResponse, GccDiagnostics, } from './api';
 import * as tmp from 'tmp';
+import { fileExecution } from './file_execution';
 
 type ExecCompilerResult = {
   success: boolean;
   stderr: string;
 }
+
 type BuildResult = {
   success: false;
   errorType: 'compile' | 'link' | 'other';
-  error: string | GccDiagnostics;
+  error: string;
 } | {
-  success: true;
-  filename: string;
-}
-export type CompileOrExecute = {
   success: false;
-  errorType: 'compile' | 'link' | 'other';
-  error: string | GccDiagnostics;
+  errorType: 'compile';
+  error: GccDiagnostics;
 } | {
   success: true;
-  stdout: string;
-  stderr: string;
-  result: string;
+  error: GccDiagnostics;
+  filename: string;
 }
 
 /**
@@ -93,30 +107,36 @@ function execCompiler(srcPath: string, noLink: boolean, debugInfo: boolean): Pro
 
 async function doBuild(code: string, debugInfo = false): Promise<BuildResult> {
   console.log('Compile begin, generate .o');
+  // generate .cpp
   const tmpSrcFile = tmp.fileSync({
     postfix: ".cpp"
   });
   fs.writeSync(tmpSrcFile.fd, code);
+
+  // generate .o
   const compileResult = await execCompiler(tmpSrcFile.name, true, debugInfo);
   tmpSrcFile.removeCallback();
+
+  let diagnostics: GccDiagnostics;
   try {
-    const diagnostics: GccDiagnostics = JSON.parse(compileResult.stderr);
-    if (!compileResult.success) {
-      return {
-        success: false,
-        errorType: 'compile',
-        error: diagnostics,
-      };
-    }
+    diagnostics = JSON.parse(compileResult.stderr);
   } catch (e) {
     console.log(e);
-    console.log('fail to parse compile reasult stderror');
+    console.log('fail to parse compile result stderr');
     return {
       success: false,
-      errorType: 'compile',
+      errorType: 'other',
       error: compileResult.stderr,
     };
   }
+  if (!compileResult.success) {
+    return {
+      success: false,
+      errorType: 'compile',
+      error: diagnostics,
+    };
+  }
+
   // generate .exe
   const linkResult = await execCompiler(changeExt(tmpSrcFile.name, '.o'), false, debugInfo);
   fs.unlinkSync(changeExt(tmpSrcFile.name, '.o'));
@@ -129,80 +149,54 @@ async function doBuild(code: string, debugInfo = false): Promise<BuildResult> {
   } else {
     return {
       success: true,
+      error: diagnostics,
       filename: getExecutablePath(tmpSrcFile.name),
     };
   }
 
 }
 
-export async function compileHandler(code: string, execute: boolean, stdin: string | undefined): Promise<CompileOrExecute> {
+export async function compileHandler(request: CppCompileRequest): Promise<CppCompileResponse> {
   console.log('Receive compile request');
-  const compileResult = await doBuild(code);
-  if (compileResult.success) {//编译成功
-    if (execute) {
-      const tmpStdinFile = tmp.fileSync({
-        postfix: ".txt"
-      });
-      if (stdin) {
-        fs.writeFileSync(tmpStdinFile.fd, stdin);
-      }
-      const tmpStderrFile = tmp.fileSync({
-        postfix: ".txt"
-      });
-      const tmpStdoutFile = tmp.fileSync({
-        postfix: ".txt"
-      });
-      const tmpResultFile = tmp.fileSync({
-        postfix: ".txt"
-      });
-      execFile('./sandbox/bin/sandbox', [
-        `--exe_path=${compileResult.filename}`,
-        '--max_real_time=1000',
-        `--input_path=${tmpStdinFile}`,
-        `--output_path=${tmpStdoutFile}`,
-        `--error_path=${tmpStderrFile}`,
-        `result_path=${tmpResultFile}`],
-        (error) => {
-          if (error) {
-            console.log('fail to execute');
-            return {
-              success: false,
-              errorType: 'execute',
-              error: error,
-            };
-          }
-          else {//成功执行文件
-            const stdout = fs.readFileSync(tmpStdoutFile.name);
-            const stderr = fs.readFileSync(tmpStderrFile.name);
-            const result = fs.readFileSync(tmpResultFile.name);
-            tmpStdoutFile.removeCallback();
-            tmpStderrFile.removeCallback();
-            tmpResultFile.removeCallback();
-            return {
-              success: true,
-              stdout: stdout,
-              stderr: stderr,
-              result: result,
-            };
-          }
-        });
-    }
-    else {//目前不支持只编译不运行
-      console.log('none api');
+  const compileResult = await doBuild(request.code, request.execute === 'debug');
+  if (!compileResult.success) {//编译成功
+    return {
+      status: 'error',
+      errorType: compileResult.errorType,
+      error: compileResult.error
+    };
+  }
+  switch (request.execute) {
+    case 'none': {
       return {
-        success: false,
+        status: 'ok',
+        execute: request.execute
+      };
+    }
+    case 'file': {
+      const stdin = request.stdin ?? "";
+      fileExecution(compileResult.filename, stdin);
+      return {
+        status: 'error',
         errorType: 'other',
-        error: 'none api',
+        error: 'not implemented'
+      };
+    }
+    case 'debug':
+    case 'interactive':
+      return {
+        status: 'error',
+        errorType: 'other',
+        error: 'not implemented'
+      };
+    default: {
+      const _: never = request.execute;
+      return {
+        status: 'error',
+        errorType: 'other',
+        error: 'unknown execute type',
       };
     }
   }
-  else {//编译失败
-    return compileResult;
-  }
-  return {
-    success: false,
-    errorType: 'other',
-    error: 'missing',
-  };
 }
 
