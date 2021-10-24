@@ -56,17 +56,17 @@ app.ws('/ws/languageServer/clangd/:token', function (ws, req) {
   }
 });
 
-app.post('/cpp/complie', function (req: Request, res: Response) {
+app.post('/cpp/compile', function (req: Request, res: Response) {
   try {
     const myRequest: CppCompileRequest = req.body;
     console.log(myRequest);
-    if (myRequest.execute == 'none') {//仅编译，不运行
+    if (myRequest.execute === 'none') {//仅编译，不运行
 
-    } else if (myRequest.execute == 'file') {//直接运行
+    } else if (myRequest.execute === 'file') {//直接运行
 
-    } else if (myRequest.execute == 'interactive') {//交互式
+    } else if (myRequest.execute === 'interactive') {//交互式
 
-    } else if (myRequest.execute == 'debug') {//调试
+    } else if (myRequest.execute === 'debug') {//调试
 
     } else {
       console.log('bad request of `execute` params');
