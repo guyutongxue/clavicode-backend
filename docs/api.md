@@ -5,7 +5,12 @@
 - `$PREFIX` 代表此项目的运行根目录。
 
 ```ts
-type RuntimeError = 'timeout' | 'violate' | 'other';
+type RuntimeError = 
+  'timeout' | // 超时
+  'memout'  | // 内存超过限制
+  'violate' | // 系统被攻击
+  'system'  | // 服务器内部错误
+  'other';    // runtimeerror运行时错误
 type GccDiagnostics = /* see devcpp7 */;
 type GdbResponse = /* see tsgdbmi */;
 

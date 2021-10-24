@@ -37,7 +37,7 @@ interface GccDiagnostic {
 }
 export type GccDiagnostics = GccDiagnostic[];
 
-export type RuntimeError = 'timeout' | 'memout' | 'violate' | 'system';
+export type RuntimeError = 'timeout' | 'memout' | 'violate' | 'system' | 'other' ;
 
 type CppCompileRequest = {
   code: string;
