@@ -21,8 +21,8 @@ import expressWs from 'express-ws';
 import { languageServerHandler } from './language_server';
 import { f } from './sandbox_interface';
 import { TEMP_CLANGD_TOKEN } from './constant';
-import { CppCompileRequest } from './api';
-
+import { CppCompileRequest, CppCompileResponse } from './api';
+import { compileHandler, CompileOrExecute } from './compile_handler';
 // f();
 
 const app = expressWs(express()).app; //创建一个expressws对象
@@ -46,8 +46,8 @@ app.ws('/socketTest', function (ws, req) {
   });
   ws.on('close', function () {
     console.log('closed');
-  })
-})
+  });
+});
 app.ws('/ws/languageServer/clangd/:token', function (ws, req) {
   if (req.params.token === TEMP_CLANGD_TOKEN) {
     languageServerHandler(ws);
@@ -56,14 +56,40 @@ app.ws('/ws/languageServer/clangd/:token', function (ws, req) {
   }
 });
 
-app.post('/cpp/compile', function (req: Request, res: Response) {
+app.post('/cpp/compile', async function (req: Request, res: Response) {
   try {
     const myRequest: CppCompileRequest = req.body;
     console.log(myRequest);
     if (myRequest.execute === 'none') {//仅编译，不运行
-
+      console.log('none api:目前不支持仅编译不运行的情况');
     } else if (myRequest.execute === 'file') {//直接运行
-
+      const compileResult: CompileOrExecute = await compileHandler(myRequest.code, true, myRequest.stdin);
+      let result: CppCompileResponse;
+      if (compileResult.success) {//如果执行成功(没有编译错误，不考虑执行过程中存在的失败)
+        if (compileResult.stderr) {//stderror不为空，说明执行过程中存在错误
+          result = {
+            status: 'ok',
+            execute: 'file',
+            result: 'error',
+            stdout: compileResult.stdout,
+            stderr: compileResult.stderr,
+            reason: compileResult.result,
+          };
+        } else {//顺利执行，对应stderror为undefined
+          result = {
+            status: 'ok',
+            execute: 'file',
+            result: 'ok',
+            stdout: compileResult.stdout,
+            stderr: compileResult.stderr,
+            reason: compileResult.result,
+          };
+        }
+        res.send(result);
+      }
+      else {//编译出现问题
+        
+      }
     } else if (myRequest.execute === 'interactive') {//交互式
 
     } else if (myRequest.execute === 'debug') {//调试
@@ -71,13 +97,12 @@ app.post('/cpp/compile', function (req: Request, res: Response) {
     } else {
       console.log('bad request of `execute` params');
     }
-  }catch(e){
+  } catch (e) {
     console.log('fail to decode request');
     console.log(e);
   }
-  
 
-})
+});
 app.listen(PORT, () => {
   console.log('server started at http://localhost:' + PORT);
 });
