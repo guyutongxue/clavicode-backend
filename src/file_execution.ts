@@ -52,10 +52,11 @@ export function fileExecution(exePath: string, stdin: string): Promise<FileExecu
     execFile(path.join(__dirname, 'sandbox/bin/sandbox'), [
       `--exe_path=${exePath}`,
       '--max_real_time=1000',
-      `--input_path=${tmpStdinFile}`,
-      `--output_path=${tmpStdoutFile}`,
-      `--error_path=${tmpStderrFile}`,
-      `--result_path=${tmpResultFile}`
+      `--input_path=${tmpStdinFile.name}`,
+      `--output_path=${tmpStdoutFile.name}`,
+      `--error_path=${tmpStderrFile.name}`,
+      `--result_path=${tmpResultFile.name}`,
+      `--log_path=/dev/null`
     ],
       (error) => {
         if (error) {
@@ -75,46 +76,45 @@ export function fileExecution(exePath: string, stdin: string): Promise<FileExecu
               stderr: fs.readFileSync(tmpStderrFile.name, 'utf-8')
             };
             const result: SandboxResult = JSON.parse(fs.readFileSync(tmpResultFile.name, 'utf-8'));
+            console.log(result);
             tmpStdoutFile.removeCallback();
             tmpStderrFile.removeCallback();
             tmpResultFile.removeCallback();
-            if (result.success) {
-              // 运行成功，顺利返回
+            if (!result.success) throw new Error("Sandbox failed");
+            if (result.result === 0) {
+              // SUCCESS
               resolve({
                 result: 'ok',
                 exitCode: result.exit_code,
                 ...resultIo
               });
+            } else if (result.result === 1 || result.result === 2) {
+              // CPU_TIME_LIMIT_EXCEEDED, REAL_TIME_LIMIT_EXCEEDED,
+              resolve({
+                result: 'error',
+                reason: 'timeout',
+                ...resultIo
+              });
+            } else if (result.result === 3) {
+              // MEMORY_LIMIT_EXCEEDED
+              resolve({
+                result: 'error',
+                reason: 'memout',
+                ...resultIo
+              });
+            } else if (result.result === 4) {
+              // RUNTIME_ERROR
+              resolve({
+                result: 'error',
+                reason: result.signal === constants.signals.SIGSYS ? 'violate' : 'other',
+                ...resultIo
+              });
             } else {
-              // 运行失败，查看result
-              if (result.result === 1 || result.result === 2) {
-                // CPU_TIME_LIMIT_EXCEEDED, REAL_TIME_LIMIT_EXCEEDED,
-                resolve({
-                  result: 'error',
-                  reason: 'timeout',
-                  ...resultIo
-                });
-              } else if (result.result === 3) {
-                // MEMORY_LIMIT_EXCEEDED
-                resolve({
-                  result: 'error',
-                  reason: 'memout',
-                  ...resultIo
-                });
-              } else if (result.result === 4) {
-                // RUNTIME_ERROR
-                resolve({
-                  result: 'error',
-                  reason: result.signal === constants.signals.SIGSYS ? 'violate' : 'other',
-                  ...resultIo
-                });
-              } else {
-                resolve({
-                  result: 'error',
-                  reason: 'system',
-                  ...resultIo
-                });
-              }
+              resolve({
+                result: 'error',
+                reason: 'system',
+                ...resultIo
+              });
             }
           } catch (_) {
             resolve({

@@ -84,6 +84,7 @@ function execCompiler(srcPath: string, noLink: boolean, debugInfo: boolean): Pro
       srcPath,
       '-o',
       outputFileName,
+      '-static'
     ];
   }
   return new Promise((resolve) => {
