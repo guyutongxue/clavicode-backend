@@ -118,7 +118,7 @@ type CppLspRequest = {}
 type CppLspResponse = {
   success: boolean;
   token?: string;      // If success is true
-  expireDate?: string; // If success is true
+// expireDate?: string; // If success is true
 }
 ```
 
@@ -302,7 +302,7 @@ POST $PREFIX/user/authorize
 ```ts
 type UserAuthorizeRequest = {
   type: OjType
-  secret: string | null; // password or unauthorize
+  secret: any | null; // password or unauthorize
 };
 type UserAuthorizeResponse = {
   success: true;
