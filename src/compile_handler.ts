@@ -53,12 +53,12 @@ function changeExt(srcPath: string, ext: string) {
 }
 
 /**
- * 获得同路径下文件名相同的exe文件
+ * 获得同路径下文件名相同的 exe 文件
  * @param srcPath 
  * @returns 
  */
 function getExecutablePath(srcPath: string) {
-  return path.join(path.dirname(srcPath), path.parse(srcPath).name + ".exe");
+  return changeExt(srcPath, ".exe");
 }
 
 function execCompiler(srcPath: string, noLink: boolean, debugInfo: boolean): Promise<ExecCompilerResult> {
@@ -66,7 +66,8 @@ function execCompiler(srcPath: string, noLink: boolean, debugInfo: boolean): Pro
   const cwd = path.dirname(srcPath);
   srcPath = path.basename(srcPath);
   let args: string[];
-  if (noLink) {// 如果不进行链接
+  if (noLink) {
+    // 如果不进行链接
     outputFileName = changeExt(srcPath, '.o');
     args = [
       //...store.get('build.compileArgs').map(parseDynamic),
@@ -84,6 +85,7 @@ function execCompiler(srcPath: string, noLink: boolean, debugInfo: boolean): Pro
       srcPath,
       '-o',
       outputFileName,
+      '-static'
     ];
   }
   return new Promise((resolve) => {
@@ -158,7 +160,8 @@ async function doBuild(code: string, debugInfo = false): Promise<BuildResult> {
 export async function compileHandler(request: CppCompileRequest): Promise<CppCompileResponse> {
   console.log('Receive compile request');
   const compileResult = await doBuild(request.code, request.execute === 'debug');
-  if (!compileResult.success) {//编译成功
+  if (!compileResult.success) {
+    // 编译错误
     return {
       status: 'error',
       errorType: compileResult.errorType,
@@ -177,9 +180,9 @@ export async function compileHandler(request: CppCompileRequest): Promise<CppCom
       const stdin = request.stdin ?? "";
       const executionResult = await fileExecution(compileResult.filename, stdin);
       return <CppCompileFileResponse>{
-        ...executionResult,
         status: 'ok',
         execute: 'file',
+        ...executionResult
       };
     }
     case 'debug':

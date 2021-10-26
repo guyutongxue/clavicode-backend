@@ -18,11 +18,15 @@
 import express from 'express';
 import { Request, Response } from 'express';
 import expressWs from 'express-ws';
+import * as tmp from 'tmp';
+
 import { languageServerHandler } from './language_server';
 import { TEMP_CLANGD_TOKEN } from './constant';
 import { CppCompileRequest, CppCompileResponse } from './api';
 import { compileHandler } from './compile_handler';
 import { interactive_execution } from './interactive_execution';
+
+tmp.setGracefulCleanup();
 
 const app = expressWs(express()).app; //创建一个expressws对象
 const {
@@ -35,7 +39,7 @@ const {
 //   });
 // });
 
-app.use(express.static('test'));
+app.use(express.static('static'));
 
 app.ws('/ws/execute/:token',async function (ws,req) {
   if (req.params.token === TEMP_CLANGD_TOKEN) {
