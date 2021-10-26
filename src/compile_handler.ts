@@ -21,6 +21,7 @@ import { execFile } from 'child_process';
 import { CppCompileFileResponse, CppCompileNoneResponse, CppCompileRequest, CppCompileResponse, GccDiagnostics, } from './api';
 import * as tmp from 'tmp';
 import { fileExecution } from './file_execution';
+import { TEMP_EXECUTE_TOKEN } from './constant';
 
 type ExecCompilerResult = {
   success: boolean;
@@ -29,7 +30,7 @@ type ExecCompilerResult = {
 
 type BuildResult = {
   success: false;
-  errorType: 'compile' | 'link' | 'other';
+  errorType: 'link' | 'other';
   error: string;
 } | {
   success: false;
@@ -182,11 +183,18 @@ export async function compileHandler(request: CppCompileRequest): Promise<CppCom
       };
     }
     case 'debug':
-    case 'interactive':
       return {
         status: 'error',
         errorType: 'other',
-        error: 'not implemented'
+        error: 'unknown execute type',
+      };
+    case 'interactive':
+      return{
+        status: 'ok',
+        execute:'interactive',
+        error: compileResult.error,
+        executeToken:TEMP_EXECUTE_TOKEN,
+        expireDate:'10000d',
       };
     default: {
       const _: never = request.execute;
