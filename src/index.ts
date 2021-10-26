@@ -19,11 +19,10 @@ import express from 'express';
 import { Request, Response } from 'express';
 import expressWs from 'express-ws';
 import { languageServerHandler } from './language_server';
-import { f } from './sandbox_interface';
 import { TEMP_CLANGD_TOKEN } from './constant';
 import { CppCompileRequest, CppCompileResponse } from './api';
 import { compileHandler } from './compile_handler';
-// f();
+import { interactive_execution } from './interactive_execution';
 
 const app = expressWs(express()).app; //创建一个expressws对象
 const {
@@ -38,15 +37,12 @@ const {
 
 app.use(express.static('test'));
 
-app.ws('/socketTest', function (ws, req) {
-  ws.send(`{"message": "hello"}`);
-  ws.on('message', function (msg) {
-    const str = msg.toString();
-    ws.send(`{"message": "received ${str.length} bytes"}`);
-  });
-  ws.on('close', function () {
-    console.log('closed');
-  });
+app.ws('/ws/execute/:token',async function (ws,req) {
+  if (req.params.token === TEMP_CLANGD_TOKEN) {
+    interactive_execution(ws);
+  } else {
+    ws.close();
+  }
 });
 app.ws('/ws/languageServer/clangd/:token', function (ws, req) {
   if (req.params.token === TEMP_CLANGD_TOKEN) {
