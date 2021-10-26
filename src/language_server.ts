@@ -16,7 +16,7 @@
 // along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
 
 import * as rpc from "@codingame/monaco-jsonrpc";
-import * as server from "@codingame/monaco-jsonrpc/lib/server"
+import * as server from "@codingame/monaco-jsonrpc/lib/server";
 import * as lsp from "vscode-languageserver";
 import ws from "ws";
 import * as cp from "child_process";
@@ -69,8 +69,8 @@ export function languageServerHandler(ws: ws) {
     dispose: () => ws.close()
   };
   if (ws.readyState == ws.OPEN) {
-    launch(socket, EXEC_PATH, { PATH: process.env.PATH }, ARGS)
+    launch(socket, EXEC_PATH, { PATH: process.env.PATH }, ARGS);
   } else {
-    ws.on('open', () => launch(socket, EXEC_PATH, { PATH: process.env.PATH }, ARGS))
+    ws.on('open', () => launch(socket, EXEC_PATH, { PATH: process.env.PATH }, ARGS));
   }
 }
