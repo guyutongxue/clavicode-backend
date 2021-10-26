@@ -84,7 +84,7 @@ export type CppCompileDebugResponse = {
   expireDate: string;     // If status is 'ok'
 };
 
-type WsExecuteC2S = {
+export type WsExecuteC2S = {
   type: 'start';
 } | {
   type: 'shutdown';
@@ -94,7 +94,7 @@ type WsExecuteC2S = {
   type: 'input';
   content: string;
 };
-type WsExecuteS2C = {
+export type WsExecuteS2C = {
   type: 'started';
 } | {
   type: 'closed';
