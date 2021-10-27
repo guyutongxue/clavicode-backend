@@ -237,5 +237,6 @@ SandboxResult run(const SandboxConfig& config) {
       }
     }
   }
+  BOOST_LOG_TRIVIAL(info) << result;
   return result;
 }

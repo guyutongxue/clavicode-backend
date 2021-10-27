@@ -6,6 +6,7 @@ PROGS=\
 	_system\
 	_sleep\
 	_chat\
+	_abort\
 
 CXX_FLAGS=\
 	-g -static\

@@ -61,12 +61,13 @@ FILE* error_file{nullptr};
 
 ErrorType c_cpp_seccomp_rules(const SandboxConfig& config) {
   int syscalls_whitelist[]{
-      SCMP_SYS(read),       SCMP_SYS(fstat),        SCMP_SYS(mmap),
-      SCMP_SYS(mprotect),   SCMP_SYS(munmap),       SCMP_SYS(uname),
-      SCMP_SYS(arch_prctl), SCMP_SYS(brk),          SCMP_SYS(access),
-      SCMP_SYS(exit_group), SCMP_SYS(close),        SCMP_SYS(readlink),
-      SCMP_SYS(sysinfo),    SCMP_SYS(write),        SCMP_SYS(writev),
-      SCMP_SYS(lseek),      SCMP_SYS(clock_gettime)};
+      SCMP_SYS(read),       SCMP_SYS(fstat),         SCMP_SYS(mmap),
+      SCMP_SYS(mprotect),   SCMP_SYS(munmap),        SCMP_SYS(uname),
+      SCMP_SYS(arch_prctl), SCMP_SYS(brk),           SCMP_SYS(access),
+      SCMP_SYS(exit_group), SCMP_SYS(close),         SCMP_SYS(readlink),
+      SCMP_SYS(sysinfo),    SCMP_SYS(write),         SCMP_SYS(writev),
+      SCMP_SYS(lseek),      SCMP_SYS(clock_gettime), SCMP_SYS(getpid),
+      SCMP_SYS(gettid)};
 
   scmp_filter_ctx ctx{seccomp_init(SCMP_ACT_KILL)};
   if (!ctx) {
@@ -83,15 +84,25 @@ ErrorType c_cpp_seccomp_rules(const SandboxConfig& config) {
           SCMP_A0(SCMP_CMP_EQ, (scmp_datum_t)(config.exe_path.c_str()))) != 0) {
     return ErrorType::LOAD_SECCOMP_FAILED;
   }
-  // static_cast<void>(config);
+
+  // allow std::abort
+  if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(rt_sigprocmask), 0) != 0) {
+    return ErrorType::LOAD_SECCOMP_FAILED;
+  }
+  if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(tgkill), 2,
+                       SCMP_A0(SCMP_CMP_EQ, (scmp_datum_t)(getpid())),
+                       SCMP_A1(SCMP_CMP_EQ, (scmp_datum_t)(gettid()))) != 0) {
+    return ErrorType::LOAD_SECCOMP_FAILED;
+  }
+
   // no write file
   if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(open), 1,
-                       SCMP_CMP(1, SCMP_CMP_MASKED_EQ, O_WRONLY | O_RDWR, 0)) !=
+                       SCMP_A1(SCMP_CMP_MASKED_EQ, O_WRONLY | O_RDWR, 0)) !=
       0) {
     return ErrorType::LOAD_SECCOMP_FAILED;
   }
   if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(openat), 1,
-                       SCMP_CMP(2, SCMP_CMP_MASKED_EQ, O_WRONLY | O_RDWR, 0)) !=
+                       SCMP_A2(SCMP_CMP_MASKED_EQ, O_WRONLY | O_RDWR, 0)) !=
       0) {
     return ErrorType::LOAD_SECCOMP_FAILED;
   }
@@ -148,7 +159,8 @@ ErrorType c_cpp_seccomp_rules(const SandboxConfig& config) {
       child_error_exit(ErrorType::SETRLIMIT_FAILED);
     }
   }
-  BOOST_LOG_TRIVIAL(info) << "max_process_number: " << config.max_process_number;
+  BOOST_LOG_TRIVIAL(info) << "max_process_number: "
+                          << config.max_process_number;
 
   // max_output_size
   if (config.max_output_size != UNLIMITED) {
