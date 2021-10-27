@@ -7,6 +7,7 @@ all: $(PROGS)
 .PHONY: clean
 
 bin/%: src/%.c
+	mkdir -p bin
 	$(CC) -o $@ $<
 
 clean:
