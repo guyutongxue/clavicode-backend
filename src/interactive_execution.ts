@@ -19,39 +19,43 @@ import cp from 'child_process';
 import path from 'path';
 import ws from "ws";
 import { WsExecuteC2S } from './api';
-export function interactive_execution(ws: ws) {
-  const sandbox_process = cp.spawn("./sandbox",
-    [
-      "--exe_path=../test/_chat"
-    ], {
-    stdio: 'pipe',
-    cwd: path.join(__dirname, "sandbox/bin")
-  });
-  sandbox_process.stdout.on('data', (data: Buffer) => {
-    console.log("Data: ", data.toString('utf-8'));
-  });
-  sandbox_process.stderr.on('data', (data: Buffer) => {
-    console.log("Err: ", data.toString('utf-8'));
-  });
-  sandbox_process.stdin.write(Buffer.from("hello\n", 'utf-8'));
-  sandbox_process.stdin.write(Buffer.from("bye\n", 'utf-8'));
-  sandbox_process.stdin.end(); // send EOF
-  sandbox_process.on('exit', () => {
-    console.log("Exited");
-  });
+import { TEMP_EXECUTE_TOKEN } from './constant';
+export function findExecution(token:string):string{
+  if(token===TEMP_EXECUTE_TOKEN){
+    return "../test/_chat";
+  }else return "None";
+}
+export function interactive_execution(ws: ws,filename:string) {
   ws.on('message', function (WsRequest: WsExecuteC2S) {
+  let sandbox_process:cp.ChildProcessWithoutNullStreams=cp.spawn('sleep',['--version']);
     if (WsRequest.type === 'start') {
-      //
+      sandbox_process = cp.spawn("./sandbox",
+        [
+          `--exe_path=${filename}`
+        ], {
+        stdio: 'pipe',
+        cwd: path.join(__dirname, "sandbox/bin")
+      });
     }
     else if (WsRequest.type === 'shutdown') {
-      //
+      sandbox_process.on('exit', () => {
+        console.log("Exited");
+      });
     }
     else if (WsRequest.type === 'eof') {
-      //
+      sandbox_process.stdin.end(); // send EOF
     }
     else if (WsRequest.type === 'input') {
       const input = WsRequest.content;
-
+      sandbox_process.stdin.write(Buffer.from(input, 'utf-8'));
+      sandbox_process.stdout.on('data', (data: Buffer) => {
+        console.log("Data: ", data.toString('utf-8'));
+        //still need to handle
+      });
+      sandbox_process.stderr.on('data', (data: Buffer) => {
+        console.log("Err: ", data.toString('utf-8'));
+        //still need to handle
+      });
     }
 
   });
