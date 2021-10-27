@@ -33,7 +33,8 @@ function createServerProcess(serverName: string, command: string, args: string[]
   serverProcess.on('error', error =>
     console.error(`Launching ${serverName} Server failed: ${error}`)
   );
-  serverProcess.stderr!.on('data', data => {
+  serverProcess.stderr?.on('data', (data) => {
+    void(data);
     // console.error(`${serverName} Server: ${data}`)
   });
   return server.createProcessStreamConnection(serverProcess);
@@ -68,7 +69,7 @@ export function languageServerHandler(ws: ws) {
     onClose: (callback) => ws.on('close', callback),
     dispose: () => ws.close()
   };
-  if (ws.readyState == ws.OPEN) {
+  if (ws.readyState === ws.OPEN) {
     launch(socket, EXEC_PATH, { PATH: process.env.PATH }, ARGS);
   } else {
     ws.on('open', () => launch(socket, EXEC_PATH, { PATH: process.env.PATH }, ARGS));

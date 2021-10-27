@@ -16,11 +16,10 @@
 // along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
 
 import cp from 'child_process';
-import { type } from 'os';
 import path from 'path';
 import ws from "ws";
-import {WsExecuteC2S} from './api';
-export function interactive_execution(ws:ws) {
+import { WsExecuteC2S } from './api';
+export function interactive_execution(ws: ws) {
   const sandbox_process = cp.spawn("./sandbox",
     [
       "--exe_path=../test/_chat"
@@ -40,19 +39,19 @@ export function interactive_execution(ws:ws) {
   sandbox_process.on('exit', () => {
     console.log("Exited");
   });
-  ws.on('message',function(WsRequest:WsExecuteC2S){
-    if(WsRequest.type=='start'){
+  ws.on('message', function (WsRequest: WsExecuteC2S) {
+    if (WsRequest.type === 'start') {
       //
     }
-    else if(WsRequest.type=='shutdown'){
+    else if (WsRequest.type === 'shutdown') {
       //
     }
-    else if(WsRequest.type=='eof'){
+    else if (WsRequest.type === 'eof') {
       //
     }
-    else if(WsRequest.type=='input'){
-      const input=WsRequest.content;
-      
+    else if (WsRequest.type === 'input') {
+      const input = WsRequest.content;
+
     }
 
   });

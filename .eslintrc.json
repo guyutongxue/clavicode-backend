@@ -25,6 +25,9 @@
       {
         "varsIgnorePattern": "_\\d*"
       }
+    ],
+    "eqeqeq": [
+      1
     ]
   }
 }

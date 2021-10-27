@@ -5,7 +5,7 @@ import pty from "node-pty";
 // Print current tty device name, and keep terminal open.
 const ptyProcess = pty.spawn("./utils/bin/pause", [], {
   cwd: process.cwd(),
-  env: process.env as any,
+  env: process.env as { [key: string]: string },
 });
 ptyProcess.onData(function (data) {
   // First get tty device name
