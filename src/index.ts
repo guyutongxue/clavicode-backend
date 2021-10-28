@@ -24,7 +24,7 @@ import { languageServerHandler } from './language_server';
 import { TEMP_CLANGD_TOKEN } from './constant';
 import { CppCompileRequest, CppCompileResponse } from './api';
 import { compileHandler } from './compile_handler';
-import { findExecution, interactive_execution } from './interactive_execution';
+import { findExecution, interactiveExecution } from './interactive_execution';
 
 tmp.setGracefulCleanup();
 
@@ -41,11 +41,11 @@ const {
 
 app.use(express.static('static'));
 
-app.ws('/ws/execute/:token',async function (ws,req) {
-  const filename=findExecution(req.params.token);
-  
-  if (filename!=="None") {
-    interactive_execution(ws,filename);
+app.ws('/ws/execute/:token', async function (ws, req) {
+  const filename = findExecution(req.params.token);
+
+  if (filename !== null) {
+    interactiveExecution(ws, filename);
   } else {
     ws.close();
   }
