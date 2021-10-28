@@ -22,11 +22,13 @@
 #include <unistd.h>
 
 int main(int argc, char** argv) {
-  if (argc != 3) {
-    fprintf(stderr, "Usage: %s <seconds> <file>\n", argv[0]);
+  if (argc <= 3) {
+    fprintf(stderr, "Usage: %s <seconds> <files...>\n", argv[0]);
     return EXIT_FAILURE;
   }
   sleep(atoi(argv[1]));
-  unlink(argv[2]);
+  for (int i = 2; i < argc; i++) {
+    unlink(argv[i]);
+  }
   return EXIT_SUCCESS;
 }
