@@ -18,11 +18,12 @@
 import express from 'express';
 import { Request, Response } from 'express';
 import expressWs from 'express-ws';
+import cors from 'cors';
 import * as tmp from 'tmp';
 
 import { languageServerHandler } from './language_server';
 import { TEMP_CLANGD_TOKEN } from './constant';
-import { CppCompileRequest, CppCompileResponse } from './api';
+import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse } from './api';
 import { compileHandler } from './compile_handler';
 import { findExecution, interactiveExecution } from './interactive_execution';
 
@@ -40,6 +41,11 @@ const {
 // });
 
 app.use(express.static('static'));
+app.use(cors({
+  origin: '*',
+  credentials: true
+}));
+app.use(express.json());
 
 app.ws('/ws/execute/:token', async function (ws, req) {
   const filename = findExecution(req.params.token);
@@ -67,6 +73,11 @@ app.post('/cpp/compile', async function (req: Request, res: Response) {
   } catch (e) {
     console.log('fail to decode request');
     console.log(e);
+    res.send(<CppCompileErrorResponse>{
+      status: 'error',
+      errorType: 'other',
+      error: 'JSON decode failure'
+    });
   }
 
 });
