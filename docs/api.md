@@ -122,6 +122,25 @@ type CppLspResponse = {
 }
 ```
 
+### 获取头文件内容
+
+```
+POST $PREFIX/cpp/getHeaderFile
+```
+
+```ts
+type CppGetHeaderFileRequest = {
+  path: string;
+};
+type CppGetHeaderFileResponse = {
+  success: true;
+  content: string;
+} | {
+  success: false;
+  reason: string;
+}
+```
+
 <!-- ### C++ 获取可执行文件
 
 ```
@@ -212,6 +231,7 @@ type WsDebugGdbC2S = {
 };
 type WsDebugGdbS2C = {
   type: 'started';
+  sourceFilePath: string;
 } | {
   type: 'closed';
   exitCode: number;
