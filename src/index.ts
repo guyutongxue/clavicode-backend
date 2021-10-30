@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
 
-import express from 'express';
+import express, { request } from 'express';
 import { Request, Response } from 'express';
 import expressWs from 'express-ws';
 import cors from 'cors';
@@ -23,10 +23,10 @@ import * as tmp from 'tmp';
 
 import { languageServerHandler } from './language_server';
 import { TEMP_CLANGD_TOKEN } from './constant';
-import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse } from './api';
+import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse } from './api';
 import { compileHandler } from './compile_handler';
 import { findExecution, interactiveExecution } from './interactive_execution';
-
+import { getHeaderFileHandler } from './getHeaderFileHandler';
 tmp.setGracefulCleanup();
 
 const app = expressWs(express()).app; //创建一个expressws对象
@@ -79,7 +79,19 @@ app.post('/cpp/compile', async function (req: Request, res: Response) {
       error: 'JSON decode failure'
     });
   }
-
+});
+app.post('/cpp/getHeaderFile', function (req: Request, res: Response) {
+  try {
+    const request: CppGetHeaderFileRequest = req.body;
+    const response: CppGetHeaderFileResponse = getHeaderFileHandler(request);
+    res.send(response);
+  } catch (e) {
+    console.log('get file');
+    res.send({
+      success: true,
+      reason: e,
+    });
+  }
 });
 app.listen(PORT, () => {
   console.log('server started at http://localhost:' + PORT);
