@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
 
-import express, { request } from 'express';
+import express from 'express';
 import { Request, Response } from 'express';
 import expressWs from 'express-ws';
 import cors from 'cors';
@@ -26,7 +26,7 @@ import { TEMP_CLANGD_TOKEN } from './constant';
 import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse } from './api';
 import { compileHandler } from './compile_handler';
 import { findExecution, interactiveExecution } from './interactive_execution';
-import { getHeaderFileHandler } from './getHeaderFileHandler';
+import { getHeaderFileHandler } from './get_header_file_handler';
 tmp.setGracefulCleanup();
 
 const app = expressWs(express()).app; //创建一个expressws对象
