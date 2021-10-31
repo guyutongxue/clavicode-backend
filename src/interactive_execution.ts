@@ -17,52 +17,73 @@
 
 import cp from 'child_process';
 import { SIGKILL } from 'constants';
+import { unlinkSync } from 'fs';
 import path from 'path';
 import ws from "ws";
-import { WsExecuteC2S } from './api';
+import { WsExecuteC2S, WsExecuteS2C } from './api';
 import { TEMP_EXECUTE_TOKEN } from './constant';
 export function findExecution(token: string): string | null {
   if (token === TEMP_EXECUTE_TOKEN) {
-    return "../test/_chat";
+    return (global as any)['TEMP_EXECUTE_PROGRAM_PATH'] ?? null;
   } else return null;
 }
 export function interactiveExecution(ws: ws, filename: string) {
-  ws.on('message', function (WsRequest: WsExecuteC2S) {
-    let sandbox_process: cp.ChildProcessWithoutNullStreams = cp.spawn('sleep', ['--version']);
-    if (WsRequest.type === 'start') {
+  function send(data: WsExecuteS2C) {
+    console.log("sent: ", data);
+    ws.send(Buffer.from(JSON.stringify(data)));
+  }
+  let sandbox_process : null | cp.ChildProcessWithoutNullStreams = null;
+  ws.on('message', function (req: Buffer) {
+    const reqObj: WsExecuteC2S = JSON.parse(req.toString());
+    console.log(reqObj);
+    if (reqObj.type === 'start') {
       sandbox_process = cp.spawn("./sandbox",
         [
-          `--exe_path=${filename}`
+          `--exe_path=${filename}`,
+          '--max_real_time=60000',
         ], {
         stdio: 'pipe',
         cwd: path.join(__dirname, "sandbox/bin")
       });
-      ws.send({ type: 'started' });
+      if (sandbox_process === null) {
+        send({type: 'error', reason: 'system' });
+        return;
+      }
+      send({ type: 'started' });
       sandbox_process.stdout.on('data', (data: Buffer) => {
         const stdout = data.toString('utf-8');
-        ws.send({
-          type: 'output', stream: 'stdout', content: stdout,
+        send({
+          type: 'output', 
+          stream: 'stdout', 
+          content: stdout,
         });
       });
       sandbox_process.stderr.on('data', (data: Buffer) => {
         const stderr = data.toString('utf-8');
-        ws.send({
-          type: 'stderr', stream: 'stdout', content: stderr,
+        send({
+          type: 'output', 
+          stream: 'stderr', 
+          content: stderr,
         });
       });
       sandbox_process.on('exit', (code) => {
-        ws.send({ type: 'closed', exitCode: code });
+        send({ type: 'closed', exitCode: code ?? 0 });
+        unlinkSync(filename);
+        (global as any)['TEMP_EXECUTE_PROGRAM_PATH'] = null;
       });
     }
-    else if (WsRequest.type === 'shutdown') {
+    else if (reqObj.type === 'shutdown') {
+      if (sandbox_process === null) return;
       if (sandbox_process.pid)
         process.kill(sandbox_process.pid, SIGKILL);
     }
-    else if (WsRequest.type === 'eof') {
+    else if (reqObj.type === 'eof') {
+      if (sandbox_process === null) return;
       sandbox_process.stdin.end();
     }
-    else if (WsRequest.type === 'input') {
-      const input = WsRequest.content;
+    else if (reqObj.type === 'input') {
+      if (sandbox_process === null) return;
+      const input = reqObj.content;
       sandbox_process.stdin.write(Buffer.from(input, 'utf-8'));
     }
   });

@@ -191,14 +191,16 @@ export async function compileHandler(request: CppCompileRequest): Promise<CppCom
         errorType: 'other',
         error: 'unknown execute type',
       };
-    case 'interactive':
-      return{
+    case 'interactive': {
+      (global as any)['TEMP_EXECUTE_PROGRAM_PATH'] = compileResult.filename;
+      return {
         status: 'ok',
-        execute:'interactive',
+        execute: 'interactive',
         error: compileResult.error,
-        executeToken:TEMP_EXECUTE_TOKEN,
-        expireDate:'10000d',
+        executeToken: TEMP_EXECUTE_TOKEN,
+        expireDate: '10000d',
       };
+    }
     default: {
       const _: never = request.execute;
       return {

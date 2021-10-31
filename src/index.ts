@@ -49,7 +49,7 @@ app.use(express.json());
 
 app.ws('/ws/execute/:token', async function (ws, req) {
   const filename = findExecution(req.params.token);
-
+  console.log("Execute: arrived", filename);
   if (filename !== null) {
     interactiveExecution(ws, filename);
   } else {
