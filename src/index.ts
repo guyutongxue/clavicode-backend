@@ -87,8 +87,8 @@ app.post('/cpp/getHeaderFile', function (req: Request, res: Response) {
     res.send(response);
   } catch (e) {
     console.log('get file');
-    res.send({
-      success: true,
+    res.send(<CppGetHeaderFileResponse>{
+      success: false,
       reason: e,
     });
   }
