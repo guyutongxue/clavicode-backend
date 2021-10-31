@@ -17,13 +17,13 @@
   "license": "GPL-3.0-or-later",
   "dependencies": {
     "@codingame/monaco-jsonrpc": "^0.3.1",
+    "@gytx/tsgdbmi": "^0.3.2",
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "express-ws": "^5.0.2",
     "node-gyp": "^8.2.0",
     "node-pty": "^0.10.1",
     "tmp": "^0.2.1",
-    "tsgdbmi": "^0.3.2",
     "vscode-languageserver": "^7.0.0"
   },
   "devDependencies": {
