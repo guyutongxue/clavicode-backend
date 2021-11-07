@@ -181,7 +181,7 @@ type WsExecuteC2S = {
 } | {
   type: 'eof';
 } | {
-  type: 'input';
+  type: 'tin';
   content: string;
 };
 type WsExecuteS2C = {
@@ -193,8 +193,7 @@ type WsExecuteS2C = {
   type: 'error';
   reason: RuntimeError;
 } | {
-  type: 'output';
-  stream: 'stdout' | 'stderr';
+  type: 'tout';
   content: string;
 }
 ```
@@ -224,7 +223,7 @@ type WsDebugGdbC2S = {
   type: 'request';
   request: string;
 } | {
-  type: 'input';
+  type: 'tin';
   content: string;
 } | {
   type: 'shutdown';
@@ -242,7 +241,7 @@ type WsDebugGdbS2C = {
   type: 'response';
   response: GdbResponse;
 } | {
-  type: 'output';
+  type: 'tout';
   content: string;
 };
 ```
