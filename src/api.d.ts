@@ -180,14 +180,3 @@ export type UserChangeUsernameRequest = {
   newUsername: string;
 }
 export type UserChangeUsernameResponse = UserRegisterResponse;
-
-declare global{
-  namespace Express {
-    export interface User{
-      email: string;
-    }
-    export interface Request{
-      user: User;
-    }
-  }
-}
