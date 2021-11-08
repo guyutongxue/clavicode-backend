@@ -18,7 +18,6 @@
 import express from 'express';
 import { Request, Response } from 'express';
 import expressWs from 'express-ws';
-import jwt from 'express-jwt';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import * as tmp from 'tmp';
@@ -27,7 +26,7 @@ import { connectToMongoDB } from './helpers/db';
 import { register, login, authenticateToken, updateName, updatePassword } from './user_system';
 import { languageServerHandler } from './language_server';
 import { TEMP_CLANGD_TOKEN } from './constant';
-import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, UserSysReponse } from './api';
+import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, UserSysResponse } from './api';
 import { compileHandler } from './compile_handler';
 import { findExecution, interactiveExecution } from './interactive_execution';
 import { getHeaderFileHandler } from './get_header_file_handler';
@@ -117,7 +116,7 @@ app.post('user/register', function (req: Request, res: Response){
   res.json(register(req.body));
 });
 app.post('user/login', function (req: Request, res: Response) {
-  login(req.body).then((value: UserSysReponse)=>{
+  login(req.body).then((value: UserSysResponse)=>{
     if(value.success){
       res.cookie('token', value.token, {httpOnly:true});
       return {success: true};
@@ -128,12 +127,13 @@ app.post('user/login', function (req: Request, res: Response) {
 app.post('user/changeProfile', authenticateToken, (req:Request, res:Response)=>{
   const body = req.body;
   if (body.type === 'password'){
-    return res.json(updatePassword({email: req.user.email, oldPassword: body.old, newPassword: body.new}));
+    return res.json(updatePassword({email: req.user === undefined? "": req.user.email, oldPassword: body.old, newPassword: body.new}));
   }
   else if (body.type === 'username'){
-    return res.json(updateName({email: req.user.email, oldPassword: body.old, newPassword: body.new}));
+    return res.json(updateName({email: req.user === undefined? "": req.user.email, newUsername: body.new}));
   }
-})
+});
+
 app.listen(PORT, () => {
   console.log('server started at http://localhost:' + PORT);
 });

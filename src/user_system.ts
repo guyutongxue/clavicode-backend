@@ -6,7 +6,6 @@ import {Request, NextFunction, Response} from 'express';
 import { UserRegisterRequest, UserLoginRequest, UserChangePasswordRequest, UserChangeUsernameRequest, UserSysResponse } from './api';
 dotenv.config({path: '../.env'});
 
-
 export async function register (body:UserRegisterRequest):Promise<UserSysResponse> {
     if (! body.email || ! body.password || ! body.username){
         return { success: false, message: 'register form incorrect'};

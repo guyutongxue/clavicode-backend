@@ -167,3 +167,13 @@ export type UserChangeUsernameRequest = {
   email: string | undefined;
   newUsername: string;
 }
+declare global{
+  namespace Express {
+    export interface User{
+      email: string;
+    }
+    export interface Request{
+      user: User;
+    }
+  }
+}
