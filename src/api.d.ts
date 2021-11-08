@@ -177,7 +177,6 @@ export type UserChangePasswordResponse = UserRegisterResponse;
 
 
 export type UserChangeUsernameRequest = {
-  email: string;
   newUsername: string;
 }
 export type UserChangeUsernameResponse = UserRegisterResponse;

@@ -308,7 +308,6 @@ POST $PREFIX/user/changeUsername
 
 ```ts
 type UserChangeUsernameRequest = {
-  email: string;
   newUsername: string;
 };
 type UserChangeUsernameResponse = UserRegisterResponse;

@@ -3,7 +3,7 @@ import { UserModel, User } from "./helpers/db";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { Request, Response } from 'express';
-import { UserRegisterRequest, UserLoginRequest, UserChangePasswordRequest, UserChangeUsernameRequest } from './api';
+import { UserRegisterRequest, UserLoginRequest, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse } from './api';
 
 dotenv.config({ path: '../.env' });
 
@@ -43,18 +43,18 @@ export async function updatePassword(body: UserChangePasswordRequest): Promise<U
 }
 
 
-export async function updateName(body: UserChangeUsernameRequest): Promise<UserSysResponse> {
-  const user = await UserModel.findOne({ email: body.email });
+export async function updateName(email: string, username: string): Promise<UserChangeUsernameResponse> {
+  const user = await UserModel.findOne({ email });
   if (user) {
-    user.name = body.newUsername;
-    return { success: false, message: "incorrect password" };
+    user.name = username;
+    return { success: true };
   }
-  return { success: false, message: "user not found" };
+  return { success: false, reason: "user not found" };
 }
 
 export async function login(body: UserLoginRequest): Promise<UserSysResponse> {
   if (!body.email || !body.password)
-    return { success: false, message: 'login form incorrec' };
+    return { success: false, message: 'login form incorrect' };
   const user = await UserModel.findOne({ email: body.email });
   if (!user)
     return { success: false, message: "user not found" };
@@ -64,15 +64,13 @@ export async function login(body: UserLoginRequest): Promise<UserSysResponse> {
   }
   return { success: false };
 }
-export function authenticateToken(req: Request, res: Response) {
-  const token = req.cookies.token;
-  if (token === null) return res.json({ success: false });
-  type Token = { email: string };
-  const result: unknown = jwt.verify(token, process.env.JWT_SECRET as string);
-  function verifyDecodedToken(data: unknown): asserts data is Token {
-    if (!(data instanceof Object))
-      res.json({ success: false });
-  }
-  verifyDecodedToken(result);
-  req.user = { email: result.email };
+export async function authenticateToken(req: Request): Promise<string | null> {
+  const token: string | undefined = req.cookies.token;
+  if (!token) return null;
+  return new Promise<string | null>((resolve) => {
+    jwt.verify(token, process.env.JWT_SECRET as string, (err, decoded) => {
+      if (err || !decoded) resolve(null);
+      else resolve(decoded.email);
+    });
+  });
 }

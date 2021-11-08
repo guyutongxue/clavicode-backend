@@ -26,7 +26,7 @@ import { connectToMongoDB } from './helpers/db';
 import { register, login, authenticateToken, updateName, updatePassword } from './user_system';
 import { languageServerHandler } from './language_server';
 import { TEMP_CLANGD_TOKEN } from './constant';
-import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, UserLoginRequest, UserLoginResponse, UserRegisterRequest, UserRegisterResponse } from './api';
+import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserRegisterRequest, UserRegisterResponse } from './api';
 import { compileHandler } from './compile_handler';
 import { findExecution, interactiveExecution } from './executions/interactive_execution';
 import { getHeaderFileHandler } from './get_header_file_handler';
@@ -84,16 +84,16 @@ app.ws('/ws/languageServer/clangd/:token', function (ws, req) {
   }
 });
 
-app.post('/cpp/compile', async function (req: Request, res: Response) {
+app.post('/cpp/compile', async (req, res) => {
   try {
     const myRequest: CppCompileRequest = req.body;
     console.log(myRequest);
     const response: CppCompileResponse = await compileHandler(myRequest);
-    res.send(response);
+    res.json(response);
   } catch (e) {
     console.log('fail to decode request');
     console.log(e);
-    res.send(<CppCompileErrorResponse>{
+    res.json(<CppCompileErrorResponse>{
       status: 'error',
       errorType: 'other',
       error: 'JSON decode failure'
@@ -101,58 +101,68 @@ app.post('/cpp/compile', async function (req: Request, res: Response) {
   }
 });
 
-app.post('/cpp/getHeaderFile', function (req: Request, res: Response) {
+app.post('/cpp/getHeaderFile', (req, res) => {
   try {
     const request: CppGetHeaderFileRequest = req.body;
     const response = getHeaderFileHandler(request);
-    res.send(response);
+    res.json(response);
   } catch (e) {
     console.log('get file');
-    res.send(<CppGetHeaderFileResponse>{
+    res.json(<CppGetHeaderFileResponse>{
       success: false,
       reason: e,
     });
   }
 });
 
-app.post('user/register', async function (req: Request, res: Response) {
+app.post('/user/register', async (req, res) => {
   try {
     const request: UserRegisterRequest = req.body;
     const response = await register(request);
     res.json(response);
   } catch (e) {
-    res.send(<UserRegisterResponse>{
+    res.json(<UserRegisterResponse>{
       success: false,
       reason: e
     });
   }
 });
 
-app.post('user/login', async function (req: Request, res: Response) {
+app.post('/user/login', async (req, res) => {
   try {
     const request: UserLoginRequest = req.body;
     const response = await login(request);
     if (response.success) {
       res.cookie('token', response.token, { httpOnly: true });
-      res.send(<UserLoginResponse>{ success: true });
+      res.json(<UserLoginResponse>{ success: true });
     } else {
-      res.send(<UserLoginResponse>{ success: false, reason: response.message });
+      res.json(<UserLoginResponse>{ success: false, reason: response.message });
     }
   } catch (e) {
-    res.send(<UserLoginResponse>{
+    res.json(<UserLoginResponse>{
       success: false,
       reason: e
     });
   }
 });
 
-app.post('user/changeProfile', authenticateToken, (req: Request, res: Response) => {
-  const body = req.body;
-  if (body.type === 'password') {
-    return res.json(updatePassword({ email: req.user === undefined ? "" : req.user.email, oldPassword: body.old, newPassword: body.new }));
-  }
-  else if (body.type === 'username') {
-    return res.json(updateName({ email: req.user === undefined ? "" : req.user.email, newUsername: body.new }));
+app.post('/user/changePassword', async (req, res) => {
+  const request: UserChangePasswordRequest = req.body;
+  const response = await updatePassword(request);
+  res.json(response);
+});
+
+app.post('/user/changeUsername', async (req: Request, res: Response) => {
+  const email = await authenticateToken(req);
+  if (email === null) {
+    res.json(<UserChangeUsernameResponse>{
+      success: false,
+      reason: 'invalid token'
+    });
+  } else {
+    const request: UserChangeUsernameRequest = req.body;
+    const response = await updateName(email, request.newUsername);
+    return res.json(response);
   }
 });
 
