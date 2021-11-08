@@ -1,53 +1,41 @@
-import { FileModel, File } from './helpers/db';
-import moment from 'moment';
-import { unlink } from 'fs';
+import { FileModel } from './helpers/db';
+import { unlinkSync } from 'fs';
+import { v4 as uuid } from 'uuid';
 
-export async function save(file: File): Promise<boolean> {
-  const file_ = new FileModel(file);
-  await file_.save().catch(() => {
-    console.log('save error');
-    return false;
+function removeFile(path: string) {
+  return () => {
+    unlinkSync(path);
+  };
+}
+
+const REMOVE_TIMEOUT = 2 * 60 * 1000;
+
+export async function save(path: string): Promise<string | null> {
+  const id = uuid();
+  const timeoutId = setTimeout(removeFile(path), REMOVE_TIMEOUT);
+  const file = new FileModel({
+    id, 
+    path, 
+    timeoutId,
+    createdAt: Date.now()
   });
-  return true;
+  try {
+    await file.save();
+    return id;
+  } catch (e) {
+    console.log("save file: ", e);
+    return null;
+  }
 }
 
 
-export async function query(id: number): Promise<string> {
-  // auto insert a new k - v pair
+export async function query(id: number): Promise<string | null> {
   const file = await FileModel.findOne({ id: id });
-  if (file) {
-    const file_ = new FileModel({ id: file.id, path: file.path });
-    if (file.email)
-      file_.email = file.email;
-    await file_.save().catch(() => {
-      console.log('save error');
-    });
-    // not delete here incase of double delete.
-    return file.path;
+  if (!file) {
+    return null;
   }
-  return "";
-}
-
-export async function refresh(): Promise<void> {
-  const expireTime = moment().subtract(10, 'minute').toDate();
-  (await FileModel.find({ createdAt: { $lte: expireTime } })).forEach(function (record) {
-    unlink(record.path, (err) => { console.log(err); });
-  });
-  await FileModel.deleteMany({ createdAt: { $lte: expireTime } });
-  return;
-}
-
-export class Timer {
-  func: () => void;
-  timeout: number;
-  constructor(func_: () => void, timeout_ = 1000 * 60) {
-    this.func = func_;
-    this.timeout = timeout_;
-  }
-  async run() {
-    setTimeout(() => {
-      this.func();
-      this.run();
-    }, this.timeout);
-  }
+  clearTimeout(file.timeoutId);
+  const path = file.path;
+  await file.remove();
+  return path;
 }

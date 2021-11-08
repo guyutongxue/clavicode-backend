@@ -30,7 +30,6 @@ import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetH
 import { compileHandler } from './compile_handler';
 import { findExecution, interactiveExecution } from './executions/interactive_execution';
 import { getHeaderFileHandler } from './get_header_file_handler';
-import { Timer, refresh } from './file_DB';
 
 tmp.setGracefulCleanup();
 
@@ -62,9 +61,6 @@ app.use(cookieParser());
 
 // connect to the mongodb server; this is a async function should be awaited..
 connectToMongoDB();
-// set a timer function to refresh the file data
-const timer = new Timer(refresh, 1000 * 60);
-timer.run();
 
 app.ws('/ws/execute/:token', async function (ws, req) {
   const filename = findExecution(req.params.token);

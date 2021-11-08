@@ -1,3 +1,20 @@
+// Copyright (C) 2021 Clavicode Team
+// 
+// This file is part of clavicode-backend.
+// 
+// clavicode-backend is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// clavicode-backend is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
+
 import dotenv from 'dotenv';
 import { UserModel, User } from "./helpers/db";
 import bcrypt from 'bcrypt';
@@ -35,6 +52,8 @@ export async function updatePassword(body: UserChangePasswordRequest): Promise<U
   if (user) {
     if (bcrypt.compareSync(body.oldPassword, user.password)) {
       user.password = bcrypt.hashSync(body.newPassword, 10);
+      user.markModified('password');
+      await user.save();
       return { success: true };
     }
     return { success: false, message: "incorrect password" };
@@ -47,6 +66,8 @@ export async function updateName(email: string, username: string): Promise<UserC
   const user = await UserModel.findOne({ email });
   if (user) {
     user.name = username;
+    user.markModified('name');
+    await user.save();
     return { success: true };
   }
   return { success: false, reason: "user not found" };
@@ -64,6 +85,7 @@ export async function login(body: UserLoginRequest): Promise<UserSysResponse> {
   }
   return { success: false };
 }
+
 export async function authenticateToken(req: Request): Promise<string | null> {
   const token: string | undefined = req.cookies.token;
   if (!token) return null;

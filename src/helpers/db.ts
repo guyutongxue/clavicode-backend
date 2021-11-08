@@ -25,11 +25,11 @@ export interface User {
   course?: { [key: string]: string };
 }
 
-export interface File extends Document {
+export interface File {
   id: number;
   path: string;
-  createdAt?: Date;
-  email?: string;
+  timeoutId: number;
+  createdAt: Date;
 }
 
 const userSchema = new Schema<User>({
@@ -46,7 +46,8 @@ const userSchema = new Schema<User>({
 const fileSchema = new Schema<File>({
   id: { type: Number, required: true },
   path: { type: String, required: true },
-  createdAt: { type: Date, default: new Date(), required: false },
+  timeoutId: { type: Number, required: true },
+  createdAt: { type: Date, expires: 60 }
 });
 
 export const UserModel = model<User>('User', userSchema);
