@@ -20,8 +20,8 @@ import { SIGKILL } from 'constants';
 import { unlinkSync } from 'fs';
 import path from 'path';
 import ws from "ws";
-import { WsExecuteC2S, WsExecuteS2C } from './api';
-import { TEMP_EXECUTE_TOKEN } from './constant';
+import { WsExecuteC2S, WsExecuteS2C } from '../api';
+import { TEMP_EXECUTE_TOKEN } from '../constant';
 export function findExecution(token: string): string | null {
   if (token === TEMP_EXECUTE_TOKEN) {
     return (global as any)['TEMP_EXECUTE_PROGRAM_PATH'] ?? null;

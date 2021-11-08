@@ -20,7 +20,7 @@ import * as fs from 'fs';
 import { execFile } from 'child_process';
 import { CppCompileFileResponse, CppCompileNoneResponse, CppCompileRequest, CppCompileResponse, GccDiagnostics, } from './api';
 import * as tmp from 'tmp';
-import { fileExecution } from './file_execution';
+import { fileExecution } from './executions/file_execution';
 import { TEMP_EXECUTE_TOKEN } from './constant';
 
 type ExecCompilerResult = {

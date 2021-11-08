@@ -255,11 +255,15 @@ POST $PREFIX/user/register
 
 ```ts
 type UserRegisterRequest = {
+  email: string;
   username: string;
   password: string;
 };
 type UserRegisterResponse = {
-  success: boolean;
+  success: true;
+} | {
+  success: false;
+  message: string;
 };
 
 ```
@@ -272,8 +276,11 @@ POST $PREFIX/user/login
 ```
 
 ```ts
-type UserLoginRequest = UserRegisterRequest;
-type UserLoginResponse = UserLoginResponse;
+type UserLoginRequest = {
+  email: string;
+  password: string;
+};
+type UserLoginResponse = UserRegisterResponse;
 ```
 
 响应若返回 `success: true`，则应包含 `Set-Cookie` 头。
@@ -281,16 +288,30 @@ type UserLoginResponse = UserLoginResponse;
 ### 修改密码
 
 ```
-POST $PREFIX/user/changeProfile
+POST $PREFIX/user/changePassword
 ```
 
 ```ts
 type UserChangePasswordRequest = {
-  type: string = 'password' | 'username'
-  old?: string;
-  new: string;
+  email: string;
+  oldPassword: string;
+  newPassword: string;
 };
-type UserChangePasswordResponse = UserLoginResponse;
+type UserChangePasswordResponse = UserRegisterResponse;
+```
+
+### 修改密码
+
+```
+POST $PREFIX/user/changeUsername
+```
+
+```ts
+type UserChangeUsernameRequest = {
+  email: string;
+  newUsername: string;
+};
+type UserChangeUsernameResponse = UserRegisterResponse;
 ```
 
 ### 获取用户信息

@@ -19,7 +19,7 @@
 import * as fs from 'fs';
 import * as tmp from 'tmp';
 import { execFile } from 'child_process';
-import { FileExecutionResult } from './api';
+import { FileExecutionResult } from '../api';
 import path from 'path';
 import { constants } from 'os';
 

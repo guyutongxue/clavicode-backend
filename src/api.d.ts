@@ -148,33 +148,40 @@ export type CppGetHeaderFileResponse = {
   success: false;
   reason: string;
 }
+
 export type UserRegisterRequest = {
-  username: string;
   email: string;
+  username: string;
   password: string;
-}
+};
 export type UserRegisterResponse = {
-  success: boolean;
-  message?: string;
-}
+  success: true;
+} | {
+  success: false;
+  reason: string;
+};
+
 export type UserLoginRequest = {
   email: string;
   password: string;
-}
-export type UserSysResponse = {
-  success: boolean;
-  token?: string;
-  message?: string;
-}
+};
+
+export type UserLoginResponse = UserRegisterResponse;
+
 export type UserChangePasswordRequest = {
-  email: string | undefined; 
+  email: string; 
   oldPassword: string;
   newPassword: string;
 }
+export type UserChangePasswordResponse = UserRegisterResponse;
+
+
 export type UserChangeUsernameRequest = {
-  email: string | undefined;
+  email: string;
   newUsername: string;
 }
+export type UserChangeUsernameResponse = UserRegisterResponse;
+
 declare global{
   namespace Express {
     export interface User{
