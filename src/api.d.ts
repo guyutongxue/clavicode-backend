@@ -140,3 +140,30 @@ export type CppGetHeaderFileResponse = {
   success: false;
   reason: string;
 }
+export type UserRegisterRequest = {
+  username: string;
+  email: string;
+  password: string;
+}
+export type UserRegisterResponse = {
+  success: boolean;
+  message?: string;
+}
+export type UserLoginRequest = {
+  email: string;
+  password: string;
+}
+export type UserSysResponse = {
+  success: boolean;
+  token?: string;
+  message?: string;
+}
+export type UserChangePasswordRequest = {
+  email: string | undefined; 
+  oldPassword: string;
+  newPassword: string;
+}
+export type UserChangeUsernameRequest = {
+  email: string | undefined;
+  newUsername: string;
+}

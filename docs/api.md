@@ -282,13 +282,14 @@ type UserLoginResponse = UserLoginResponse;
 ### 修改密码
 
 ```
-POST $PREFIX/user/changePassword
+POST $PREFIX/user/changeProfile
 ```
 
 ```ts
 type UserChangePasswordRequest = {
-  oldPassword: string;
-  newPassword: string;
+  type: string = 'password' | 'username'
+  old?: string;
+  new: string;
 };
 type UserChangePasswordResponse = UserLoginResponse;
 ```
