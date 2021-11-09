@@ -21,8 +21,8 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { Request, Response } from 'express';
 import { UserRegisterRequest, UserLoginRequest, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse } from './api';
-
-dotenv.config({ path: '../.env' });
+// need change to customize local server. 
+dotenv.config({ path: '/home/glg2021/workspace/clavicode-backend/.env' });
 
 export type UserSysResponse = {
   success: boolean;
@@ -38,9 +38,9 @@ export async function register(body: UserRegisterRequest): Promise<UserSysRespon
     return { success: false, message: "Email Address" + body.email + "is already taken" };
   }
   const user = new UserModel({
-    username: body.username,
+    name: body.username,
     email: body.email,
-    password: bcrypt.hash(body.password, 10),
+    password: await bcrypt.hash(body.password, 10),
     is_authorized: false,
   });
   await user.save();
@@ -71,6 +71,10 @@ export async function updateName(email: string, username: string): Promise<UserC
     return { success: true };
   }
   return { success: false, reason: "user not found" };
+}
+
+export async function getUserInfo(email: string): Promise<> {
+
 }
 
 export async function login(body: UserLoginRequest): Promise<UserSysResponse> {

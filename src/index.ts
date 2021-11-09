@@ -28,7 +28,7 @@ import { languageServerHandler } from './language_server';
 import { TEMP_CLANGD_TOKEN } from './constant';
 import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserRegisterRequest, UserRegisterResponse } from './api';
 import { compileHandler } from './compile_handler';
-import { findExecution, interactiveExecution } from './executions/interactive_execution';
+// import { findExecution, interactiveExecution } from './executions/interactive_execution';
 import { getHeaderFileHandler } from './get_header_file_handler';
 
 tmp.setGracefulCleanup();
@@ -61,7 +61,7 @@ app.use(cookieParser());
 
 // connect to the mongodb server; this is a async function should be awaited..
 connectToMongoDB();
-
+/*
 app.ws('/ws/execute/:token', async function (ws, req) {
   const filename = findExecution(req.params.token);
   console.log("Execute: arrived", filename);
@@ -71,7 +71,7 @@ app.ws('/ws/execute/:token', async function (ws, req) {
     ws.close();
   }
 });
-
+*/
 app.ws('/ws/languageServer/clangd/:token', function (ws, req) {
   if (req.params.token === TEMP_CLANGD_TOKEN) {
     languageServerHandler(ws);
@@ -140,6 +140,11 @@ app.post('/user/login', async (req, res) => {
       reason: e
     });
   }
+});
+
+app.post('/user/info', async (req, res) => {
+  const email = await authenticateToken(req);
+
 });
 
 app.post('/user/changePassword', async (req, res) => {
