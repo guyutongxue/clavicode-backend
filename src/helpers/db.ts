@@ -26,7 +26,7 @@ export interface User {
 }
 
 export interface File {
-  id: number;
+  id: string;
   path: string;
   timeoutId: number;
   createdAt: Date;
@@ -44,7 +44,7 @@ const userSchema = new Schema<User>({
 });
 
 const fileSchema = new Schema<File>({
-  id: { type: Number, required: true },
+  id: { type: String, required: true },
   path: { type: String, required: true },
   timeoutId: { type: Number, required: true },
   createdAt: { type: Date, expires: 60 }

@@ -510,20 +510,3 @@ type OjSetTypeResponse = {
   success: boolean;
 };
 ```
-
-# 数据库交互
-
-```ts
-// src/file_DB.ts
-@brief 保存文件路径到数据库
-@param path 路径名称
-@return 路径的唯一id， 如果出错，返回null
-async function save (path: string): Promise<string|NULL>
-```
-
-```ts
-// src/file_DB.ts
-@brief 用唯一id索引文件路径
-@return id对应路径，如果id对应文件不存在，返回null
-async function query (id: Number): Promise<string|NULL>
-```
