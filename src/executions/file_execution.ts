@@ -23,7 +23,7 @@ import { FileExecutionResult } from '../api';
 import path from 'path';
 import { constants } from 'os';
 
-type SandboxResult = {
+export type SandboxResult = {
   success: boolean;
   cpu_time: number;
   real_time: number;
@@ -33,7 +33,6 @@ type SandboxResult = {
   result: number;
 
 };
-
 export function fileExecution(exePath: string, stdin: string): Promise<FileExecutionResult> {
   const tmpStdinFile = tmp.fileSync({
     postfix: ".txt"
@@ -49,7 +48,7 @@ export function fileExecution(exePath: string, stdin: string): Promise<FileExecu
     postfix: ".json"
   });
   return new Promise((resolve) => {
-    execFile(path.join(__dirname, 'sandbox/bin/sandbox'), [
+    execFile(path.join(__dirname, '../sandbox/bin/sandbox'), [
       `--exe_path=${exePath}`,
       '--max_real_time=1000',
       `--input_path=${tmpStdinFile.name}`,

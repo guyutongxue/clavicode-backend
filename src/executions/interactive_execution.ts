@@ -14,77 +14,129 @@
 // 
 // You should have received a copy of the GNU General Public License
 // along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
+import { TEMP_EXECUTE_TOKEN } from '../constant';
 
-import cp from 'child_process';
-import { SIGKILL } from 'constants';
-import { unlinkSync } from 'fs';
-import path from 'path';
+
+
 import ws from "ws";
 import { WsExecuteC2S, WsExecuteS2C } from '../api';
-import { TEMP_EXECUTE_TOKEN } from '../constant';
-export function findExecution(token: string): string | null {
-  if (token === TEMP_EXECUTE_TOKEN) {
-    return (global as any)['TEMP_EXECUTE_PROGRAM_PATH'] ?? null;
-  } else return null;
+import pty from "node-pty";
+import { query } from '../file_DB';
+import * as tmp from 'tmp';
+import * as fs from 'fs';
+import { SandboxResult } from './file_execution';
+import { constants } from 'os';
+
+
+export function findExecution(id: number): Promise<string | null> {
+  return query(id);
 }
 export function interactiveExecution(ws: ws, filename: string) {
   function send(data: WsExecuteS2C) {
     console.log("sent: ", data);
     ws.send(Buffer.from(JSON.stringify(data)));
   }
-  let sandbox_process : null | cp.ChildProcessWithoutNullStreams = null;
+  let ptyProcess: null | pty.IPty = null;
+  let tmpResultFile: tmp.FileResult | null = null;
   ws.on('message', function (req: Buffer) {
     const reqObj: WsExecuteC2S = JSON.parse(req.toString());
     console.log(reqObj);
+    tmpResultFile = tmp.fileSync({
+      postfix: ".json"
+    });
     if (reqObj.type === 'start') {
-      sandbox_process = cp.spawn("./sandbox",
-        [
-          `--exe_path=${filename}`,
-          '--max_real_time=60000',
-        ], {
-        stdio: 'pipe',
-        cwd: path.join(__dirname, "sandbox/bin")
+      ptyProcess = pty.spawn('../sandbox/bin/sandbox', [
+        `--exe_path=${filename}`,
+        '--max_real_time=300000',
+        `--result_path=${tmpResultFile.name}`,
+        `--log_path=/dev/null`
+      ], {
+        cwd: process.cwd(),
+        env: process.env as { [key: string]: string },
       });
-      if (sandbox_process === null) {
-        send({type: 'error', reason: 'system' });
+      if (ptyProcess === null) {
+        send({ type: 'error', reason: 'system' });
         return;
       }
       send({ type: 'started' });
-      sandbox_process.stdout.on('data', (data: Buffer) => {
-        const stdout = data.toString('utf-8');
-        send({
-          type: 'output', 
-          stream: 'stdout', 
-          content: stdout,
-        });
+      ptyProcess.onData(function (data) {
+        send({ type: 'tout', content: data });
       });
-      sandbox_process.stderr.on('data', (data: Buffer) => {
-        const stderr = data.toString('utf-8');
-        send({
-          type: 'output', 
-          stream: 'stderr', 
-          content: stderr,
-        });
+      ptyProcess.onExit(function (data) {
+        if (data.exitCode !== 0) {
+          send({ type: 'error', reason: 'system' });
+          console.log('交互式运行时，沙箱未正常退出');
+          return;
+        }
+        if (tmpResultFile === null) {
+          send({ type: 'error', reason: 'system' });
+          return;
+        }
+        const result: SandboxResult = JSON.parse(fs.readFileSync(tmpResultFile.name, 'utf-8'));
+        tmpResultFile.removeCallback();
+        if (result.exit_code !== 0) {
+          send({ type: 'error', reason: 'system' });
+          return;
+        }
+        if (result.result === 0) {
+          // SUCCESS
+          send({
+            type: 'closed',
+            exitCode: 0
+          });
+        } else if (result.result === 1 || result.result === 2) {
+          // CPU_TIME_LIMIT_EXCEEDED, REAL_TIME_LIMIT_EXCEEDED,
+          send({
+            type: 'error',
+            reason: 'timeout',
+
+          });
+        } else if (result.result === 3) {
+          // MEMORY_LIMIT_EXCEEDED
+          send({
+            type: 'error',
+            reason: 'memout',
+          });
+        } else if (result.result === 4) {
+          // RUNTIME_ERROR
+          send({
+            type: 'error',
+            reason: result.signal === constants.signals.SIGSYS ? 'violate' : 'other',
+          });
+        } else {
+          send({
+            type: 'error',
+            reason: 'system',
+          });
+        }
+        return;
       });
-      sandbox_process.on('exit', (code) => {
-        send({ type: 'closed', exitCode: code ?? 0 });
-        unlinkSync(filename);
-        (global as any)['TEMP_EXECUTE_PROGRAM_PATH'] = null;
-      });
+
     }
     else if (reqObj.type === 'shutdown') {
-      if (sandbox_process === null) return;
-      if (sandbox_process.pid)
-        process.kill(sandbox_process.pid, SIGKILL);
+      if (ptyProcess === null) {
+        send({ type: 'error', reason: 'system' });
+        return;
+      }
+      ptyProcess.kill();
     }
     else if (reqObj.type === 'eof') {
-      if (sandbox_process === null) return;
-      sandbox_process.stdin.end();
+      if (ptyProcess === null) {
+        send({ type: 'error', reason: 'system' });
+        return;
+      }
+      ptyProcess.write('\x04');
+
     }
-    else if (reqObj.type === 'input') {
-      if (sandbox_process === null) return;
+    else if (reqObj.type === 'tin') {
+      if (ptyProcess === null) {
+        send({ type: 'error', reason: 'system' });
+        return;
+      }
+
+      ptyProcess.write('\x04');
       const input = reqObj.content;
-      sandbox_process.stdin.write(Buffer.from(input, 'utf-8'));
+      ptyProcess.write(input);
     }
   });
 }
