@@ -73,7 +73,7 @@ export async function updateName(email: string, username: string): Promise<UserC
   return { success: false, reason: "user not found" };
 }
 
-export async function getUserInfo(email: string): Promise<> {
+export async function getUserInfo(email: string): Promise<void> {
 
 }
 

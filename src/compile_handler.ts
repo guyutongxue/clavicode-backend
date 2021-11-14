@@ -21,7 +21,7 @@ import { execFile } from 'child_process';
 import { CppCompileFileResponse, CppCompileNoneResponse, CppCompileRequest, CppCompileResponse, GccDiagnostics, } from './api';
 import * as tmp from 'tmp';
 import { fileExecution } from './executions/file_execution';
-import { TEMP_EXECUTE_TOKEN } from './constant';
+import { save } from './file_DB';
 
 type ExecCompilerResult = {
   success: boolean;
@@ -192,12 +192,19 @@ export async function compileHandler(request: CppCompileRequest): Promise<CppCom
         error: 'unknown execute type',
       };
     case 'interactive': {
-      (global as any)['TEMP_EXECUTE_PROGRAM_PATH'] = compileResult.filename;
+      const id = await save(compileResult.filename);
+      if (id === null) {
+        return {
+          status: 'error',
+          errorType: 'other',
+          error: 'fail to save file'
+        };
+      }
       return {
         status: 'ok',
         execute: 'interactive',
         error: compileResult.error,
-        executeToken: TEMP_EXECUTE_TOKEN,
+        executeToken: id,
         expireDate: '10000d',
       };
     }

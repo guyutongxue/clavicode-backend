@@ -14,21 +14,17 @@
 // 
 // You should have received a copy of the GNU General Public License
 // along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
-import { TEMP_EXECUTE_TOKEN } from '../constant';
-
-
 
 import ws from "ws";
 import { WsExecuteC2S, WsExecuteS2C } from '../api';
-import pty from "node-pty";
+import * as pty from "node-pty";
 import { query } from '../file_DB';
 import * as tmp from 'tmp';
 import * as fs from 'fs';
 import { SandboxResult } from './file_execution';
 import { constants } from 'os';
 
-
-export function findExecution(id: number): Promise<string | null> {
+export function findExecution(id: string): Promise<string | null> {
   return query(id);
 }
 export function interactiveExecution(ws: ws, filename: string) {
@@ -36,14 +32,15 @@ export function interactiveExecution(ws: ws, filename: string) {
     console.log("sent: ", data);
     ws.send(Buffer.from(JSON.stringify(data)));
   }
+
+  const tmpResultFile = tmp.fileSync({
+    postfix: ".json"
+  });
   let ptyProcess: null | pty.IPty = null;
-  let tmpResultFile: tmp.FileResult | null = null;
+
   ws.on('message', function (req: Buffer) {
     const reqObj: WsExecuteC2S = JSON.parse(req.toString());
-    console.log(reqObj);
-    tmpResultFile = tmp.fileSync({
-      postfix: ".json"
-    });
+    console.log("request: ", reqObj);
     if (reqObj.type === 'start') {
       ptyProcess = pty.spawn('../sandbox/bin/sandbox', [
         `--exe_path=${filename}`,
@@ -51,7 +48,7 @@ export function interactiveExecution(ws: ws, filename: string) {
         `--result_path=${tmpResultFile.name}`,
         `--log_path=/dev/null`
       ], {
-        cwd: process.cwd(),
+        cwd: __dirname,
         env: process.env as { [key: string]: string },
       });
       if (ptyProcess === null) {
@@ -63,16 +60,15 @@ export function interactiveExecution(ws: ws, filename: string) {
         send({ type: 'tout', content: data });
       });
       ptyProcess.onExit(function (data) {
+        if (ws.readyState === ws.CLOSED) return;
         if (data.exitCode !== 0) {
           send({ type: 'error', reason: 'system' });
           console.log('交互式运行时，沙箱未正常退出');
           return;
         }
-        if (tmpResultFile === null) {
-          send({ type: 'error', reason: 'system' });
-          return;
-        }
-        const result: SandboxResult = JSON.parse(fs.readFileSync(tmpResultFile.name, 'utf-8'));
+        const str = fs.readFileSync(tmpResultFile.name, 'utf-8');
+        console.log("result: ", str);
+        const result: SandboxResult = JSON.parse(str);
         tmpResultFile.removeCallback();
         if (result.exit_code !== 0) {
           send({ type: 'error', reason: 'system' });
@@ -89,7 +85,6 @@ export function interactiveExecution(ws: ws, filename: string) {
           send({
             type: 'error',
             reason: 'timeout',
-
           });
         } else if (result.result === 3) {
           // MEMORY_LIMIT_EXCEEDED
@@ -108,35 +103,39 @@ export function interactiveExecution(ws: ws, filename: string) {
             type: 'error',
             reason: 'system',
           });
+          console.log("UNKNOWN RESULT TYPE");
         }
         return;
       });
-
-    }
-    else if (reqObj.type === 'shutdown') {
+    } else if (reqObj.type === 'shutdown') {
       if (ptyProcess === null) {
         send({ type: 'error', reason: 'system' });
+        console.log("NOT STARTED");
         return;
       }
       ptyProcess.kill();
-    }
-    else if (reqObj.type === 'eof') {
+    } else if (reqObj.type === 'eof') {
       if (ptyProcess === null) {
         send({ type: 'error', reason: 'system' });
+        console.log("NOT STARTED");
         return;
       }
       ptyProcess.write('\x04');
 
-    }
-    else if (reqObj.type === 'tin') {
+    } else if (reqObj.type === 'tin') {
       if (ptyProcess === null) {
         send({ type: 'error', reason: 'system' });
+        console.log("NOT STARTED");
         return;
       }
 
-      ptyProcess.write('\x04');
       const input = reqObj.content;
       ptyProcess.write(input);
     }
+  });
+
+  ws.on('close', function() {
+    ptyProcess?.kill();
+    console.log("WS Closed.");
   });
 }

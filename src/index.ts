@@ -30,6 +30,7 @@ import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetH
 import { compileHandler } from './compile_handler';
 // import { findExecution, interactiveExecution } from './executions/interactive_execution';
 import { getHeaderFileHandler } from './get_header_file_handler';
+import { findExecution, interactiveExecution } from './executions/interactive_execution';
 
 tmp.setGracefulCleanup();
 
@@ -61,9 +62,9 @@ app.use(cookieParser());
 
 // connect to the mongodb server; this is a async function should be awaited..
 connectToMongoDB();
-/*
+
 app.ws('/ws/execute/:token', async function (ws, req) {
-  const filename = findExecution(req.params.token);
+  const filename = await findExecution(req.params.token);
   console.log("Execute: arrived", filename);
   if (filename !== null) {
     interactiveExecution(ws, filename);
@@ -71,7 +72,7 @@ app.ws('/ws/execute/:token', async function (ws, req) {
     ws.close();
   }
 });
-*/
+
 app.ws('/ws/languageServer/clangd/:token', function (ws, req) {
   if (req.params.token === TEMP_CLANGD_TOKEN) {
     languageServerHandler(ws);
