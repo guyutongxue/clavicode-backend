@@ -28,15 +28,26 @@ export function findExecution(id: string): Promise<string | null> {
   return query(id);
 }
 export function interactiveExecution(ws: ws, filename: string) {
-  function send(data: WsExecuteS2C) {
-    console.log("sent: ", data);
-    ws.send(Buffer.from(JSON.stringify(data)));
-  }
 
   const tmpResultFile = tmp.fileSync({
     postfix: ".json"
   });
   let ptyProcess: null | pty.IPty = null;
+
+  function send(data: WsExecuteS2C) {
+    console.log("sent: ", data);
+    ws.send(Buffer.from(JSON.stringify(data)));
+  }
+
+  function close() {
+    tmpResultFile.removeCallback();
+    if (ptyProcess !== null) {
+      ptyProcess.kill();
+    }
+    fs.unlinkSync(filename);
+    ws.close();
+    console.log("closed");
+  }
 
   ws.on('message', function (req: Buffer) {
     const reqObj: WsExecuteC2S = JSON.parse(req.toString());
@@ -108,12 +119,7 @@ export function interactiveExecution(ws: ws, filename: string) {
         return;
       });
     } else if (reqObj.type === 'shutdown') {
-      if (ptyProcess === null) {
-        send({ type: 'error', reason: 'system' });
-        console.log("NOT STARTED");
-        return;
-      }
-      ptyProcess.kill();
+      close();
     } else if (reqObj.type === 'eof') {
       if (ptyProcess === null) {
         send({ type: 'error', reason: 'system' });
@@ -135,7 +141,6 @@ export function interactiveExecution(ws: ws, filename: string) {
   });
 
   ws.on('close', function() {
-    ptyProcess?.kill();
-    console.log("WS Closed.");
+    close();
   });
 }
