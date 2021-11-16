@@ -56,7 +56,7 @@ export const FileModel = model<File>('File', fileSchema);
 // run().catch(err=>console.log(err));
 
 export async function connectToMongoDB(): Promise<void> {
-  await connect('mongodb://localhost:27017/').then(() => {
+  await connect('mongodb://localhost:27017/clavicode').then(() => {
     console.log('connected to server');
   });
   // const doc = new UserModel({
