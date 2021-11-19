@@ -30,6 +30,7 @@ import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetH
 import { compileHandler } from './compile_handler';
 import { getHeaderFileHandler } from './get_header_file_handler';
 import { findExecution, interactiveExecution } from './executions/interactive_execution';
+import { getProblem, listProblems, listProblemSets } from './oj/fetch';
 
 tmp.setGracefulCleanup();
 
@@ -166,6 +167,36 @@ app.post('/user/changeUsername', async (req: Request, res: Response) => {
     return res.json(response);
   }
 });
+
+app.get('/oj/listProblemSets', async (req, res) => {
+  const response = await listProblemSets();
+  res.json(response);
+});
+
+app.get('/oj/listProblems/:problemSetId', async (req, res) => {
+  const { problemSetId } = req.params;
+  if (!problemSetId) {
+    res.json({
+      success: false,
+      reason: 'no problem set id'
+    });
+  }
+  const response = await listProblems(problemSetId);
+  res.json(response);
+});
+
+app.get('/oj/getProblem/:problemSetId/:problemId', async (req, res) => {
+  const { problemSetId, problemId } = req.params;
+  if (!problemSetId || !problemId) {
+    res.json({
+      success: false,
+      reason: 'no problem set id or problem id'
+    });
+  }
+  const response = await getProblem(problemId, problemSetId);
+  res.json(response);
+});
+
 
 app.listen(PORT, () => {
   console.log('server started at http://localhost:' + PORT);

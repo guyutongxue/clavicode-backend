@@ -213,7 +213,15 @@ export async function listProblems(setId: string): Promise<OjListProblemsRespons
         reason: "获取题目列表失败，请检查是否拥有访问该课程的权限。"
       };
     }
-    const json = JSON.parse(text);
+    let json: any;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      return {
+        success: false,
+        reason: "获取题目列表失败，请检查是否拥有访问该课程的权限。"
+      };
+    }
 
     if (!("problemlist" in json)) {
       return {
@@ -250,7 +258,7 @@ export interface SolutionDescription {
   details: string;
 }
 
-export async function getDescription(problemId: string, setId: string) : Promise<OjGetProblemResponse> {
+export async function getProblem(problemId: string, setId: string) : Promise<OjGetProblemResponse> {
   const page = `https://programming.pku.edu.cn/programming/problem/${problemId}/show.do?problemsId=${setId}`;
   const text = await tryFetch(page, {
     headers

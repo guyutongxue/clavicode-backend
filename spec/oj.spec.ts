@@ -16,7 +16,7 @@
 // along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import { getDescription, getSolution, listProblems, listProblemSets, submitCode } from '../src/oj/fetch';
+import { getProblem, getSolution, listProblems, listProblemSets, submitCode } from '../src/oj/fetch';
 
 describe("Programming Grid fetching", () => {
 
@@ -56,9 +56,8 @@ int main() {
   });
 
   it("should get problem discription", async () => {
-    const description = await getDescription(PROBLEM_ID, SET_ID);
+    const description = await getProblem(PROBLEM_ID, SET_ID);
     expect(description.success).toBeTrue();
-    console.log(description);
   });
 
   it("should submit", async () => {
@@ -68,7 +67,7 @@ int main() {
       code: SOLUTION_CODE
     });
     expect(submit.success).toBeTrue();
-    
+
     if (!submit.success) return;
 
     const solution = await getSolution(submit.solutionId);
