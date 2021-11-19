@@ -187,6 +187,7 @@ export type UserChangeUsernameResponse = UserRegisterResponse;
 
 export type OjCommitRequest = {
   problemId: string;
+  problemSetId: string;
   code: string;
 };
 export type OjCommitResponse = {

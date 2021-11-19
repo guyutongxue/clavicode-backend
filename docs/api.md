@@ -363,6 +363,7 @@ POST $PREFIX/oj/commit
 ```ts
 type OjCommitRequest = {
   problemId: string;
+  problemSetId: string;
   code: string;
 };
 type OjCommitResponse = {

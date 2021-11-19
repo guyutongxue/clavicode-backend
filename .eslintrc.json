@@ -28,6 +28,12 @@
     ],
     "eqeqeq": [
       1
+    ],
+    "no-constant-condition": [
+      1,
+      {
+        "checkLoops": false
+      }
     ]
   }
 }
