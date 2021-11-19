@@ -22,13 +22,12 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import * as tmp from 'tmp';
 
-import { connectToMongoDB } from './helpers/db';
+import { connectToMongoDB } from './db/utils';
 import { register, login, authenticateToken, updateName, updatePassword } from './user_system';
 import { languageServerHandler } from './language_server';
 import { TEMP_CLANGD_TOKEN } from './constant';
 import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserRegisterRequest, UserRegisterResponse } from './api';
 import { compileHandler } from './compile_handler';
-// import { findExecution, interactiveExecution } from './executions/interactive_execution';
 import { getHeaderFileHandler } from './get_header_file_handler';
 import { findExecution, interactiveExecution } from './executions/interactive_execution';
 

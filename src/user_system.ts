@@ -16,7 +16,7 @@
 // along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
 
 import dotenv from 'dotenv';
-import { UserModel, User } from "./helpers/db";
+import { UserModel, User } from "./db/utils";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { Request, Response } from 'express';

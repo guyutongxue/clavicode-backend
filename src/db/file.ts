@@ -1,4 +1,4 @@
-import { FileModel } from './helpers/db';
+import { FileModel } from './utils';
 import { unlinkSync } from 'fs';
 import { v4 as uuid } from 'uuid';
 

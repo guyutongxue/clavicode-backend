@@ -437,6 +437,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/mime@npm:^2.0.3":
+  version: 2.0.3
+  resolution: "@types/mime@npm:2.0.3"
+  checksum: 1f4f144423e149f300438f7cdca9b308d7a18a944e63f5ddf262558208a22a64c8e79b6973d602d86928e19052b3256b492429951b34d037242bb1bdfddae388
+  languageName: node
+  linkType: hard
+
 "@types/moment@npm:^2.13.0":
   version: 2.13.0
   resolution: "@types/moment@npm:2.13.0"
@@ -1602,6 +1609,7 @@ __metadata:
     "@types/express-jwt": ^6.0.2
     "@types/express-ws": ^3.0.1
     "@types/jsonwebtoken": ^8.5.5
+    "@types/mime": ^2.0.3
     "@types/moment": ^2.13.0
     "@types/node": ^16.10.2
     "@types/tmp": ^0.2.1
