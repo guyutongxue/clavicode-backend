@@ -73,8 +73,12 @@ export async function updateName(email: string, username: string): Promise<UserC
   return { success: false, reason: "user not found" };
 }
 
-export async function getUserInfo(email: string): Promise<void> {
-
+export async function getUsername(email: string): Promise<string> {
+  const user = await UserModel.findOne({email});
+  if (user) {
+    return user.name;
+  }
+  return "";
 }
 
 export async function login(body: UserLoginRequest): Promise<UserSysResponse> {
@@ -84,10 +88,25 @@ export async function login(body: UserLoginRequest): Promise<UserSysResponse> {
   if (!user)
     return { success: false, message: "user not found" };
   if (bcrypt.compareSync(body.password, user.password)) {
-    const token = jwt.sign({ email: body.email }, process.env.JWT_SECRET as string, { expiresIn: '1d' });
-    return { success: true, token: token };
+    return getToken(body.email);
   }
   return { success: false };
+}
+
+export async function getToken(email: string): Promise<UserSysResponse>{
+  const token = jwt.sign({ email }, process.env.JWT_SECRET as string, { expiresIn: '1h' });
+  return { success: true, token: token };
+}
+
+export async function logout(email: string): Promise<boolean>{
+  const user = await UserModel.findOne({email: email});
+  if (! user)
+    return false;
+  return true;
+}
+
+export async function remove(email: string): Promise<void>{
+  UserModel.find({email: email}).remove();
 }
 
 export async function authenticateToken(req: Request): Promise<string | null> {

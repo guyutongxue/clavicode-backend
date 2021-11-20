@@ -23,10 +23,10 @@ import cors from 'cors';
 import * as tmp from 'tmp';
 
 import { connectToMongoDB } from './db/utils';
-import { register, login, authenticateToken, updateName, updatePassword } from './user_system';
+import { register, login, authenticateToken, updateName, updatePassword, getUsername, logout, getToken } from './user_system';
 import { languageServerHandler } from './language_server';
 import { TEMP_CLANGD_TOKEN } from './constant';
-import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, OjSubmitRequest, OjSubmitResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserRegisterRequest, UserRegisterResponse } from './api';
+import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, OjSubmitRequest, OjSubmitResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserLogoutResponse, UserRegisterRequest, UserRegisterResponse } from './api';
 import { compileHandler } from './compile_handler';
 import { getHeaderFileHandler } from './get_header_file_handler';
 import { findExecution, interactiveExecution } from './executions/interactive_execution';
@@ -143,15 +143,42 @@ app.post('/user/login', async (req, res) => {
   }
 });
 
-app.post('/user/info', async (req, res) => {
+app.get('/user/username', async (req, res) => {
   const email = await authenticateToken(req);
-
+  if (email){
+    res.json({username: await getUsername(email)});
+  }
+  res.json({username: "not found"});
 });
 
 app.post('/user/changePassword', async (req, res) => {
   const request: UserChangePasswordRequest = req.body;
   const response = await updatePassword(request);
   res.json(response);
+});
+
+app.get('/user/logout', async(req, res) =>{
+  try{
+  res.cookie('token', "", { httpOnly: true, expires: new Date(Date.now())});
+  res.json({success: true});
+  }catch(e){
+    res.json(<UserLogoutResponse>{
+      success: false, 
+      reason: e
+    });
+  }
+});
+
+app.get('/user/getToken', async(req, res)=>{
+  const email = await authenticateToken(req);
+  if (email){
+    const token = await getToken(email);
+    if(email)
+    {res.cookie('token', token, {httpOnly: true});
+    res.json({success: true});}
+    res.json({success: false});
+  }
+  res.json({success: false});
 });
 
 app.post('/user/changeUsername', async (req: Request, res: Response) => {
@@ -164,7 +191,7 @@ app.post('/user/changeUsername', async (req: Request, res: Response) => {
   } else {
     const request: UserChangeUsernameRequest = req.body;
     const response = await updateName(email, request.newUsername);
-    return res.json(response);
+    res.json(response);
   }
 });
 

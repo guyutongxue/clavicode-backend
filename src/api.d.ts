@@ -168,6 +168,8 @@ export type UserLoginRequest = {
 
 export type UserLoginResponse = UserRegisterResponse;
 
+export type UserLogoutResponse = UserRegisterResponse;
+
 export type UserChangePasswordRequest = {
   email: string; 
   oldPassword: string;
