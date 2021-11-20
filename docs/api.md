@@ -357,16 +357,16 @@ type UserAuthorizeResponse = {
 ### 提交
 
 ```
-POST $PREFIX/oj/commit
+POST $PREFIX/oj/submit
 ```
 
 ```ts
-type OjCommitRequest = {
+type OjSubmitRequest = {
   problemId: string;
   problemSetId: string;
   code: string;
 };
-type OjCommitResponse = {
+type OjSubmitResponse = {
   success: true;
   solutionId: string;
 } | {
@@ -482,11 +482,11 @@ type OjSetCourseResponse = {
 ### 查看提交历史
 
 ```
-GET $PREFIX/oj/commitHistory/$PROBLEM_SET_ID/$PROBLEM_ID
+GET $PREFIX/oj/submitHistory/$PROBLEM_SET_ID/$PROBLEM_ID
 ```
 
 ```ts
-type OjCommitHistoryResponse = {
+type OjSubmitHistoryResponse = {
   success: true;
   history: {
     solutionId: string;
