@@ -26,11 +26,11 @@ import { connectToMongoDB } from './db/utils';
 import { register, login, authenticateToken, updateName, updatePassword } from './user_system';
 import { languageServerHandler } from './language_server';
 import { TEMP_CLANGD_TOKEN } from './constant';
-import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserRegisterRequest, UserRegisterResponse } from './api';
+import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, OjSubmitRequest, OjSubmitResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserRegisterRequest, UserRegisterResponse } from './api';
 import { compileHandler } from './compile_handler';
 import { getHeaderFileHandler } from './get_header_file_handler';
 import { findExecution, interactiveExecution } from './executions/interactive_execution';
-import { getProblem, listProblems, listProblemSets } from './oj/fetch';
+import { getProblem, listProblems, listProblemSets, submitCode } from './oj/fetch';
 
 tmp.setGracefulCleanup();
 
@@ -196,6 +196,19 @@ app.get('/oj/getProblem/:problemSetId/:problemId', async (req, res) => {
   const response = await getProblem(problemId, problemSetId);
   res.json(response);
 });
+
+app.post('/oj/submit', async (req, res) => {
+  try {
+    const request: OjSubmitRequest = req.body;
+    const response = await submitCode(request);
+    res.json(response);
+  } catch {
+    res.json(<OjSubmitResponse>{
+      success: false,
+      reason: 'JSON decode failure'
+    });
+  }
+})
 
 
 app.listen(PORT, () => {

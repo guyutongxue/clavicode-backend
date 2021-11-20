@@ -20,7 +20,7 @@ import * as cheerio from 'cheerio';
 import * as iconv from 'iconv-lite';
 import * as mime from 'mime/lite';
 import { URL, URLSearchParams } from 'url';
-import { OjCommitRequest, OjCommitResponse, OjGetProblemResponse, OjGetSolutionResponse, OjListProblemSetsResponse, OjListProblemsResponse } from '../api';
+import { OjSubmitRequest, OjSubmitResponse, OjGetProblemResponse, OjGetSolutionResponse, OjListProblemSetsResponse, OjListProblemsResponse } from '../api';
 
 const testUserName = 'clavicode.test.user';
 const testUserPassword = 'clavicode';
@@ -305,7 +305,7 @@ export async function getProblem(problemId: string, setId: string) : Promise<OjG
   return r;
 }
 
-export async function submitCode(req: OjCommitRequest): Promise<OjCommitResponse> {
+export async function submitCode(req: OjSubmitRequest): Promise<OjSubmitResponse> {
   const HEADER_COMMENT = "// Submitted by clavicode\n\n";
   const page = `https://programming.pku.edu.cn/programming/problem/submit.do`;
   const data = new URLSearchParams();
