@@ -47,7 +47,7 @@ const {
 
 app.use(express.static('static'));
 app.use(cors({
-  origin: '*',
+  origin: [/localhost(:\d+)?$/, /guoyi.work$/],
   credentials: true
 }));
 app.use(express.json());
@@ -116,7 +116,12 @@ app.post('/user/register', async (req, res) => {
   try {
     const request: UserRegisterRequest = req.body;
     const response = await register(request);
-    res.json(response);
+    if (response.success) {
+      res.cookie('token', response.token, { httpOnly: true });
+      res.json(<UserLoginResponse>{ success: true });
+    } else {
+      res.json(<UserLoginResponse>{ success: false, reason: response.message });
+    }
   } catch (e) {
     res.json(<UserRegisterResponse>{
       success: false,
@@ -130,25 +135,36 @@ app.post('/user/login', async (req, res) => {
     const request: UserLoginRequest = req.body;
     const response = await login(request);
     if (response.success) {
-      res.cookie('token', response.token, { httpOnly: true });
+      res.cookie('token', response.token, {
+        httpOnly: true,
+        expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7)
+      });
       res.json(<UserLoginResponse>{ success: true });
     } else {
       res.json(<UserLoginResponse>{ success: false, reason: response.message });
     }
   } catch (e) {
-    res.json(<UserLoginResponse>{
-      success: false,
-      reason: e
-    });
+    if (e instanceof Error) {
+      res.json(<UserLoginResponse>{
+        success: false,
+        reason: e.message
+      });
+    } else {
+      res.json(<UserLoginResponse>{
+        success: false,
+        reason: e
+      });
+    }
   }
 });
 
 app.get('/user/username', async (req, res) => {
   const email = await authenticateToken(req);
-  if (email){
-    res.json({username: await getUsername(email)});
+  if (email) {
+    res.json({ success: true, username: await getUsername(email) });
+  } else {
+    res.json({ success: false, reason: "not found" });
   }
-  res.json({username: "not found"});
 });
 
 app.post('/user/changePassword', async (req, res) => {
@@ -157,28 +173,29 @@ app.post('/user/changePassword', async (req, res) => {
   res.json(response);
 });
 
-app.get('/user/logout', async(req, res) =>{
-  try{
-  res.cookie('token', "", { httpOnly: true, expires: new Date(Date.now())});
-  res.json({success: true});
-  }catch(e){
+app.get('/user/logout', async (req, res) => {
+  try {
+    res.clearCookie('token');
+    res.json({ success: true });
+  } catch (e) {
     res.json(<UserLogoutResponse>{
-      success: false, 
+      success: false,
       reason: e
     });
   }
 });
 
-app.get('/user/getToken', async(req, res)=>{
+app.get('/user/getToken', async (req, res) => {
   const email = await authenticateToken(req);
-  if (email){
+  if (email) {
     const token = await getToken(email);
-    if(email)
-    {res.cookie('token', token, {httpOnly: true});
-    res.json({success: true});}
-    res.json({success: false});
+    if (email) {
+      res.cookie('token', token, { httpOnly: true });
+      res.json({ success: true });
+    }
+    res.json({ success: false });
   }
-  res.json({success: false});
+  res.json({ success: false });
 });
 
 app.post('/user/changeUsername', async (req: Request, res: Response) => {

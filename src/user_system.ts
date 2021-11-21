@@ -19,10 +19,11 @@ import dotenv from 'dotenv';
 import { UserModel, User } from "./db/utils";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import * as path from 'path';
 import { Request, Response } from 'express';
 import { UserRegisterRequest, UserLoginRequest, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse } from './api';
 // need change to customize local server. 
-dotenv.config({ path: '/home/glg2021/workspace/clavicode-backend/.env' });
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 export type UserSysResponse = {
   success: boolean;
