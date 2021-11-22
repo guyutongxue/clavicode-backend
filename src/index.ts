@@ -38,7 +38,7 @@ import { getProblem, listProblems, listProblemSets, submitCode } from './oj/fetc
 
 tmp.setGracefulCleanup();
 // need change to customize local server. 
-dotenv.config({ path: path.join(__dirname, '../env') });
+dotenv.config({ path: path.join(__dirname, '../.env') });
 const app = expressWs(express()).app; //创建一个expressws对象
 const {
   PORT = "3000",
@@ -261,8 +261,8 @@ app.post('/oj/submit', async (req, res) => {
 
 
 if (process.env.PRODUCTION) {
-  const cert = fs.readFileSync('cert/clavi.cool.pem', 'utf-8');
-  const key = fs.readFileSync('cert/clavi.cool.key', 'utf-8');
+  const cert = fs.readFileSync(path.join(__dirname, '../cert/clavi.cool.pem'), 'utf-8');
+  const key = fs.readFileSync(path.join(__dirname, '../cert/clavi.cool.key'), 'utf-8');
 
   https.createServer({ key, cert }, app).listen(PORT, () => {
     console.log('server started at https://localhost:' + PORT);
