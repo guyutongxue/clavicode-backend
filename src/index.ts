@@ -24,6 +24,7 @@ import expressWs from 'express-ws';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import * as tmp from 'tmp';
+import * as path from 'path';
 
 import { connectToMongoDB } from './db/utils';
 import { register, login, authenticateToken, updateName, updatePassword, getUsername, logout, getToken } from './user_system';
@@ -37,7 +38,7 @@ import { getProblem, listProblems, listProblemSets, submitCode } from './oj/fetc
 
 tmp.setGracefulCleanup();
 // need change to customize local server. 
-dotenv.config({ path: '/home/glg2021/workspace/clavicode-backend/.env' });
+dotenv.config({ path: path.join(__dirname, '../env') });
 const app = expressWs(express()).app; //创建一个expressws对象
 const {
   PORT = "3000",
