@@ -18,7 +18,7 @@
 import ws from "ws";
 import { WsExecuteC2S, WsExecuteS2C } from '../api';
 import * as pty from "node-pty";
-import { query } from '../file_DB';
+import { query } from '../db/file';
 import * as tmp from 'tmp';
 import * as fs from 'fs';
 import { SandboxResult } from './file_execution';

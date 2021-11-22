@@ -1,22 +1,26 @@
+// Copyright (C) 2021 Clavicode Team
+// 
+// This file is part of clavicode-backend.
+// 
+// clavicode-backend is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// clavicode-backend is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
+
 import { default as fetch, HeadersInit, RequestInit, Response } from 'node-fetch';
 import * as cheerio from 'cheerio';
 import * as iconv from 'iconv-lite';
 import * as mime from 'mime/lite';
 import { URL, URLSearchParams } from 'url';
-import { OjListProblemSetsResponse } from '../api';
-
-interface IProblemInfo {
-  id: string;
-  setId: string;
-  text: string;
-  index: number;
-  status?: 'ac' | 'wa';
-}
-interface IProblemSetInfo extends IProblemInfo {
-  id: string;
-  text: string;
-  available: boolean;
-}
+import { OjSubmitRequest, OjSubmitResponse, OjGetProblemResponse, OjGetSolutionResponse, OjListProblemSetsResponse, OjListProblemsResponse } from '../api';
 
 const testUserName = 'clavicode.test.user';
 const testUserPassword = 'clavicode';
@@ -55,10 +59,10 @@ export async function login(): Promise<boolean> {
   }).then(r => {
     const cookie = r.headers.get('Set-Cookie');
     if (cookie === null) {
-      console.log('cookie is null');
+      // console.log('cookie is null');
       return false;
     } else {
-      console.log('success get cookie,cookie is ', cookie);
+      // console.log('success get cookie,cookie is ', cookie);
       saveCookie(cookie);
       return true;
     }
@@ -66,7 +70,7 @@ export async function login(): Promise<boolean> {
 }
 
 
-export async function getCourseName() {
+export async function getCourseName(): Promise<string | null> {
   const id = testCourseId;
   if (id === null) return null;
   const page = `https://programming.pku.edu.cn/programming/course/${id}/show.do`;
@@ -83,7 +87,7 @@ export async function getCourseName() {
     });
 }
 
-export async function getProblemSets() :Promise<OjListProblemSetsResponse>{
+export async function listProblemSets() :Promise<OjListProblemSetsResponse>{
   const id = testCourseId;
   const page = `https://programming.pku.edu.cn/programming/course/${id}/show.do`;
   return fetch(page, {
@@ -93,10 +97,12 @@ export async function getProblemSets() :Promise<OjListProblemSetsResponse>{
     .then(buf => {
       const text = iconv.decode(buf, 'gb2312');
       const $ = cheerio.load(text);
+      const title = $(".showtitle");
+      title.children().remove();
       const list = $("ul.homework");
       return {
         success: true,
-        title: testCourseId,
+        title: title.text().trim(),
         problemSets: list.children().map(function () {
           const a = $(this).children("a");
           const color = $(this).children("font").attr("color");
@@ -133,7 +139,7 @@ async function tryFetch(url: string, options: RequestInit, decode = true): Promi
   async function retry() {
     switch (_tried++) {
       case 1:
-        console.log("Cookie not set or expired, try login...");
+        // console.log("Cookie not set or expired, try login...");
         await login();
         return false;
       case 0:
@@ -148,7 +154,9 @@ async function tryFetch(url: string, options: RequestInit, decode = true): Promi
     if (r.status === 404) {
       continue;
     }
-    const buf = await r.clone().buffer();
+    // response.buffer is deprecated in node-fetch v3. Though we are using v2 now,
+    // but keep it for compatibility.
+    const buf = Buffer.from(await r.clone().arrayBuffer());
     if (r.headers.get('Content-Type')?.includes('application/json')) {
       const text = iconv.decode(buf, 'utf-8');
       const json = JSON.parse(text);
@@ -185,38 +193,52 @@ async function getImage(url: string): Promise<string> {
           ...headers,
           ...loadCookie()
         }
-      }).then(r => r.buffer());
+      }).then(r => r.arrayBuffer()).then(buf => Buffer.from(buf));
     } else {
-      return r.buffer();
+      return r.arrayBuffer().then(buf => Buffer.from(buf));
     }
   });
   return `data:${mimeType};base64,${buf.toString('base64')}`;
 }
 
-export async function getProblems(setId: string) {
+export async function listProblems(setId: string): Promise<OjListProblemsResponse> {
   const courseId = testCourseId;
   const page = `https://programming.pku.edu.cn/programming/course/${courseId}/showProblemList.do?problemsId=${setId}&type=json`;
   return tryFetch(page, {
     headers
   }).then(text => {
     if (text === null) {
-      console.log("获取题目列表失败，请检查是否拥有访问该课程的权限。");
-      return [];
+      return {
+        success: false,
+        reason: "获取题目列表失败，请检查是否拥有访问该课程的权限。"
+      };
     }
-    const json = JSON.parse(text);
+    let json: any;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      return {
+        success: false,
+        reason: "获取题目列表失败，请检查是否拥有访问该课程的权限。"
+      };
+    }
 
-    console.log(json);
     if (!("problemlist" in json)) {
-      console.log("获取题目列表失败，请检查是否拥有访问该课程的权限。");
-      return [];
+      return {
+        success: false,
+        reason: "获取题目列表失败，请检查是否拥有访问该课程的权限。"
+      };
     }
-    return (json.problemlist.problems as any[]).map((p, i) => (<IProblemInfo>{
-      id: p.id,
-      setId: setId,
-      index: i + 1,
-      text: p.title,
-      status: p.result === null ? undefined : (p.result === "AC" ? 'ac' : 'wa')
+    const problems = (json.problemlist.problems as Record<string, unknown>[]).map((p) => ({
+      problemId: p.id as string,
+      title: p.title as string,
+      status: (p.result !== null ? p.result === "AC" ? 'accepted' : 'tried' : 'none') as ('none' | 'accepted' | 'tried')
     }));
+    return {
+      success: true,
+      title: "",
+      problems: problems
+    };
 
   });
 }
@@ -236,8 +258,8 @@ export interface SolutionDescription {
   details: string;
 }
 
-export async function getDescription(info: IProblemInfo) {
-  const page = `https://programming.pku.edu.cn/programming/problem/${info.id}/show.do?problemsId=${info.setId}`;
+export async function getProblem(problemId: string, setId: string) : Promise<OjGetProblemResponse> {
+  const page = `https://programming.pku.edu.cn/programming/problem/${problemId}/show.do?problemsId=${setId}`;
   const text = await tryFetch(page, {
     headers
   });
@@ -271,7 +293,7 @@ export async function getDescription(info: IProblemInfo) {
   const output = getRawIo('#sampleOutput');
 
   const r = {
-    success: true,
+    success: true as const,
     title: $("#problemTitle").text(),
     description: $("#problemDescription").html() ?? "",
     aboutInput: $("#aboutInput").html() ?? "",
@@ -280,17 +302,16 @@ export async function getDescription(info: IProblemInfo) {
     sampleOutput: output,
     hint: $("#problemHint").html() ?? "",
   };
-  console.log(r);
   return r;
 }
 
-export async function submitCode(info: IProblemInfo, code: string) {
-  const HEADER_COMMENT = "// Submitted by 'Programming Grid' clavicode\n\n";
+export async function submitCode(req: OjSubmitRequest): Promise<OjSubmitResponse> {
+  const HEADER_COMMENT = "// Submitted by clavicode\n\n";
   const page = `https://programming.pku.edu.cn/programming/problem/submit.do`;
   const data = new URLSearchParams();
-  data.append('problemId', info.id);
-  data.append('problemsId', info.setId);
-  data.append('sourceCode', HEADER_COMMENT + code);
+  data.append('problemId', req.problemId);
+  data.append('problemsId', req.problemSetId);
+  data.append('sourceCode', HEADER_COMMENT + req.code);
   data.append('programLanguage', 'C++');
   const r = await tryFetch(page, {
     method: "POST",
@@ -301,17 +322,21 @@ export async function submitCode(info: IProblemInfo, code: string) {
     body: data.toString()
   }, false);
   if (r === null) {
-    console.log("提交失败，请检查是否拥有访问该课程的权限。");
-    return null;
+    return {
+      success: false,
+      reason: "提交失败，请检查是否拥有访问该课程的权限。"
+    };
   }
   if (r.status !== 200) {
-    console.log("提交失败。可能是编程网格服务器出现问题，请稍后再试。");
-    return null;
+    return {
+      success: false,
+      reason: "提交失败，可能是编程网格服务器出现问题，请稍后再试。"
+    };
   }
-  const text = iconv.decode(await r?.buffer(), "gb2312");
+  const text = iconv.decode(Buffer.from(await r?.arrayBuffer()), "gb2312");
   const $ = cheerio.load(text);
-  if (!r.url.includes("solutionId")) {
-    console.log("编程网格拒绝服务。可能的原因是输入了不允许的字符序列。");
+  const solutionId = /solutionId=([0-9a-f]{32})/g.exec(r.url)?.[1];
+  if (!solutionId) {
     return {
       success: false,
       reason: "编程网格拒绝服务。可能的原因是输入了不允许的字符序列。"
@@ -319,21 +344,40 @@ export async function submitCode(info: IProblemInfo, code: string) {
   }
   if ($("td.t").length > 0) {
     const msg = $("td.t").text();
-    console.log(msg);
     return {
       success: false,
       reason: msg
     };
   }
-  const status = $('.showtitle').text().trim();
-  const values = $('.fieldvalue');
-  if (values.length !== 3) return null;
-  const details = values.eq(1).children().html();
   return {
     success: true,
-    status: status,
-    hint: details ?? "",
-    time: 0,
-    memory: ""
+    solutionId: solutionId
+  };
+}
+
+export async function getSolution(solutionId: string) : Promise<OjGetSolutionResponse> {
+  const page = `https://programming.pku.edu.cn/programming/problem/solution.do?solutionId=${solutionId}&type=json`;
+  const text = await tryFetch(page, {
+    headers
+  });
+  if (text === null) {
+    return {
+      success: false,
+      reason: 'permission denied'
+    };
+  }
+  let json: any;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    return {
+      success: false,
+      reason: 'permission denied'
+    };
+  }
+  return {
+    success: true,
+    status: json.solution.result,
+    hint: json.solution.hint
   };
 }

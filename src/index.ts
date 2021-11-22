@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
 import * as https from 'https';
+import * as http from 'http';
+import * as fs from 'fs';
 import dotenv from 'dotenv';
 import express from 'express';
 import { Request, Response } from 'express';
@@ -22,16 +24,17 @@ import expressWs from 'express-ws';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import * as tmp from 'tmp';
-import * as fs from 'fs';
-import { connectToMongoDB } from './helpers/db';
-import { register, login, authenticateToken, updateName, updatePassword } from './user_system';
+
+import { connectToMongoDB } from './db/utils';
+import { register, login, authenticateToken, updateName, updatePassword, getUsername, logout, getToken } from './user_system';
 import { languageServerHandler } from './language_server';
 import { TEMP_CLANGD_TOKEN } from './constant';
-import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserRegisterRequest, UserRegisterResponse } from './api';
+import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, OjSubmitRequest, OjSubmitResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserLogoutResponse, UserRegisterRequest, UserRegisterResponse } from './api';
 import { compileHandler } from './compile_handler';
-// import { findExecution, interactiveExecution } from './executions/interactive_execution';
 import { getHeaderFileHandler } from './get_header_file_handler';
 import { findExecution, interactiveExecution } from './executions/interactive_execution';
+import { getProblem, listProblems, listProblemSets, submitCode } from './oj/fetch';
+
 tmp.setGracefulCleanup();
 // need change to customize local server. 
 dotenv.config({ path: '/home/glg2021/workspace/clavicode-backend/.env' });
@@ -48,7 +51,7 @@ const {
 
 app.use(express.static('static'));
 app.use(cors({
-  origin: '*',
+  origin: [/localhost(:\d+)?$/, /guoyi.work$/],
   credentials: true
 }));
 app.use(express.json());
@@ -117,7 +120,12 @@ app.post('/user/register', async (req, res) => {
   try {
     const request: UserRegisterRequest = req.body;
     const response = await register(request);
-    res.json(response);
+    if (response.success) {
+      res.cookie('token', response.token, { httpOnly: true });
+      res.json(<UserLoginResponse>{ success: true });
+    } else {
+      res.json(<UserLoginResponse>{ success: false, reason: response.message });
+    }
   } catch (e) {
     res.json(<UserRegisterResponse>{
       success: false,
@@ -131,28 +139,67 @@ app.post('/user/login', async (req, res) => {
     const request: UserLoginRequest = req.body;
     const response = await login(request);
     if (response.success) {
-      res.cookie('token', response.token, { httpOnly: true });
+      res.cookie('token', response.token, {
+        httpOnly: true,
+        expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7)
+      });
       res.json(<UserLoginResponse>{ success: true });
     } else {
       res.json(<UserLoginResponse>{ success: false, reason: response.message });
     }
   } catch (e) {
-    res.json(<UserLoginResponse>{
-      success: false,
-      reason: e
-    });
+    if (e instanceof Error) {
+      res.json(<UserLoginResponse>{
+        success: false,
+        reason: e.message
+      });
+    } else {
+      res.json(<UserLoginResponse>{
+        success: false,
+        reason: e
+      });
+    }
   }
 });
 
-app.post('/user/info', async (req, res) => {
+app.get('/user/username', async (req, res) => {
   const email = await authenticateToken(req);
-
+  if (email) {
+    res.json({ success: true, username: await getUsername(email) });
+  } else {
+    res.json({ success: false, reason: "not found" });
+  }
 });
 
 app.post('/user/changePassword', async (req, res) => {
   const request: UserChangePasswordRequest = req.body;
   const response = await updatePassword(request);
   res.json(response);
+});
+
+app.get('/user/logout', async (req, res) => {
+  try {
+    res.clearCookie('token');
+    res.json({ success: true });
+  } catch (e) {
+    res.json(<UserLogoutResponse>{
+      success: false,
+      reason: e
+    });
+  }
+});
+
+app.get('/user/getToken', async (req, res) => {
+  const email = await authenticateToken(req);
+  if (email) {
+    const token = await getToken(email);
+    if (email) {
+      res.cookie('token', token, { httpOnly: true });
+      res.json({ success: true });
+    }
+    res.json({ success: false });
+  }
+  res.json({ success: false });
 });
 
 app.post('/user/changeUsername', async (req: Request, res: Response) => {
@@ -165,20 +212,62 @@ app.post('/user/changeUsername', async (req: Request, res: Response) => {
   } else {
     const request: UserChangeUsernameRequest = req.body;
     const response = await updateName(email, request.newUsername);
-    return res.json(response);
+    res.json(response);
   }
 });
+
+app.get('/oj/listProblemSets', async (req, res) => {
+  const response = await listProblemSets();
+  res.json(response);
+});
+
+app.get('/oj/listProblems/:problemSetId', async (req, res) => {
+  const { problemSetId } = req.params;
+  if (!problemSetId) {
+    res.json({
+      success: false,
+      reason: 'no problem set id'
+    });
+  }
+  const response = await listProblems(problemSetId);
+  res.json(response);
+});
+
+app.get('/oj/getProblem/:problemSetId/:problemId', async (req, res) => {
+  const { problemSetId, problemId } = req.params;
+  if (!problemSetId || !problemId) {
+    res.json({
+      success: false,
+      reason: 'no problem set id or problem id'
+    });
+  }
+  const response = await getProblem(problemId, problemSetId);
+  res.json(response);
+});
+
+app.post('/oj/submit', async (req, res) => {
+  try {
+    const request: OjSubmitRequest = req.body;
+    const response = await submitCode(request);
+    res.json(response);
+  } catch {
+    res.json(<OjSubmitResponse>{
+      success: false,
+      reason: 'JSON decode failure'
+    });
+  }
+});
+
+
 if (process.env.PRODUCTION) {
-  const cert = fs.readFileSync('cert/clavi.cool.pem', 'utf8');
-  const key = fs.readFileSync('cert/clavi.cool.key', 'utf8');
+  const cert = fs.readFileSync('cert/clavi.cool.pem', 'utf-8');
+  const key = fs.readFileSync('cert/clavi.cool.key', 'utf-8');
 
-  https.createServer({
-    key, cert
-  }, app).listen(3000);
-
-}
-else {
-  app.listen(PORT, () => {
+  https.createServer({ key, cert }, app).listen(PORT, () => {
+    console.log('server started at https://localhost:' + PORT);
+  });
+} else {
+  http.createServer(app).listen(PORT, () => {
     console.log('server started at http://localhost:' + PORT);
   });
 }
