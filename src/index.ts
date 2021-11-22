@@ -14,14 +14,15 @@
 // 
 // You should have received a copy of the GNU General Public License
 // along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
-
+import * as https from 'https';
+import dotenv from 'dotenv';
 import express from 'express';
 import { Request, Response } from 'express';
 import expressWs from 'express-ws';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import * as tmp from 'tmp';
-
+import * as fs from 'fs';
 import { connectToMongoDB } from './helpers/db';
 import { register, login, authenticateToken, updateName, updatePassword } from './user_system';
 import { languageServerHandler } from './language_server';
@@ -31,9 +32,9 @@ import { compileHandler } from './compile_handler';
 // import { findExecution, interactiveExecution } from './executions/interactive_execution';
 import { getHeaderFileHandler } from './get_header_file_handler';
 import { findExecution, interactiveExecution } from './executions/interactive_execution';
-
 tmp.setGracefulCleanup();
-
+// need change to customize local server. 
+dotenv.config({ path: '/home/glg2021/workspace/clavicode-backend/.env' });
 const app = expressWs(express()).app; //创建一个expressws对象
 const {
   PORT = "3000",
@@ -167,7 +168,17 @@ app.post('/user/changeUsername', async (req: Request, res: Response) => {
     return res.json(response);
   }
 });
+if (process.env.PRODUCTION) {
+  const cert = fs.readFileSync('cert/clavi.cool.pem', 'utf8');
+  const key = fs.readFileSync('cert/clavi.cool.key', 'utf8');
 
-app.listen(PORT, () => {
-  console.log('server started at http://localhost:' + PORT);
-});
+  https.createServer({
+    key, cert
+  }, app).listen(3000);
+
+}
+else {
+  app.listen(PORT, () => {
+    console.log('server started at http://localhost:' + PORT);
+  });
+}

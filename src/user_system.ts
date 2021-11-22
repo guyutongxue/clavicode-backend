@@ -15,14 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
 
-import dotenv from 'dotenv';
+
 import { UserModel, User } from "./helpers/db";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { Request, Response } from 'express';
 import { UserRegisterRequest, UserLoginRequest, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse } from './api';
-// need change to customize local server. 
-dotenv.config({ path: '/home/glg2021/workspace/clavicode-backend/.env' });
+
 
 export type UserSysResponse = {
   success: boolean;
