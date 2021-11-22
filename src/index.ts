@@ -14,6 +14,7 @@
 // 
 // You should have received a copy of the GNU General Public License
 // along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
+
 import * as https from 'https';
 import * as http from 'http';
 import * as fs from 'fs';
@@ -27,9 +28,8 @@ import * as tmp from 'tmp';
 import * as path from 'path';
 
 import { connectToMongoDB } from './db/utils';
-import { register, login, authenticateToken, updateName, updatePassword, getUsername, logout, getToken } from './user_system';
+import { register, login, authenticateToken, updateName, updatePassword, getUsername, getToken } from './user_system';
 import { languageServerHandler } from './language_server';
-import { TEMP_CLANGD_TOKEN } from './constant';
 import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, OjSubmitRequest, OjSubmitResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserLogoutResponse, UserRegisterRequest, UserRegisterResponse } from './api';
 import { compileHandler } from './compile_handler';
 import { getHeaderFileHandler } from './get_header_file_handler';
@@ -39,16 +39,25 @@ import { getProblem, listProblems, listProblemSets, submitCode } from './oj/fetc
 tmp.setGracefulCleanup();
 // need change to customize local server. 
 dotenv.config({ path: path.join(__dirname, '../.env') });
-const app = expressWs(express()).app; //创建一个expressws对象
+const app: expressWs.Application = express() as any;
 const {
   PORT = "3000",
 } = process.env;   //默认端口为3000
 
-// app.get('/', (req: Request, res: Response) => {
-//   res.send({
-//     message: 'hello world',
-//   });
-// });
+if (process.env.PRODUCTION) {
+  const cert = fs.readFileSync(path.join(__dirname, '../cert/clavi.cool.pem'), 'utf-8');
+  const key = fs.readFileSync(path.join(__dirname, '../cert/clavi.cool.key'), 'utf-8');
+
+  const server = https.createServer({ key, cert }, app).listen(PORT, () => {
+    console.log('server started at https://localhost:' + PORT);
+  });
+  expressWs(app, server);
+} else {
+  const server = http.createServer(app).listen(PORT, () => {
+    console.log('server started at http://localhost:' + PORT);
+  });
+  expressWs(app, server);
+}
 
 app.use(express.static('static'));
 app.use(cors({
@@ -78,12 +87,9 @@ app.ws('/ws/execute/:token', async function (ws, req) {
   }
 });
 
-app.ws('/ws/languageServer/clangd/:token', function (ws, req) {
-  if (req.params.token === TEMP_CLANGD_TOKEN) {
-    languageServerHandler(ws);
-  } else {
-    ws.close();
-  }
+app.ws('/ws/languageServer/cpp', function (ws, req) {
+  languageServerHandler(ws);
+  setTimeout(() => ws.close(), 5 * 60 * 1000);
 });
 
 app.post('/cpp/compile', async (req, res) => {
@@ -258,17 +264,3 @@ app.post('/oj/submit', async (req, res) => {
     });
   }
 });
-
-
-if (process.env.PRODUCTION) {
-  const cert = fs.readFileSync(path.join(__dirname, '../cert/clavi.cool.pem'), 'utf-8');
-  const key = fs.readFileSync(path.join(__dirname, '../cert/clavi.cool.key'), 'utf-8');
-
-  https.createServer({ key, cert }, app).listen(PORT, () => {
-    console.log('server started at https://localhost:' + PORT);
-  });
-} else {
-  http.createServer(app).listen(PORT, () => {
-    console.log('server started at http://localhost:' + PORT);
-  });
-}
