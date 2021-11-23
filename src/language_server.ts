@@ -21,7 +21,7 @@ import * as lsp from "vscode-languageserver";
 import ws from "ws";
 import * as cp from "child_process";
 
-const EXEC_PATH = "clangd";
+const EXEC_PATH = "clangd-12";
 const ARGS = [
   "--query-driver=/usr/bin/g++-11"
 ];
