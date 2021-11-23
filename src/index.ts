@@ -34,7 +34,7 @@ import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetH
 import { compileHandler } from './compile_handler';
 import { getHeaderFileHandler } from './get_header_file_handler';
 import { findExecution, interactiveExecution } from './executions/interactive_execution';
-import { getProblem, listProblems, listProblemSets, submitCode } from './oj/fetch';
+import { getProblem, getSolution, listProblems, listProblemSets, submitCode } from './oj/fetch';
 
 tmp.setGracefulCleanup();
 // need change to customize local server. 
@@ -264,3 +264,15 @@ app.post('/oj/submit', async (req, res) => {
     });
   }
 });
+
+app.get('/oj/getSolution/:solutionId', async (req, res) => {
+  const { solutionId } = req.params;
+  if (!solutionId) {
+    res.json({
+      success: false,
+      reason: 'no solution id'
+    });
+  }
+  const response = await getSolution(solutionId);
+  res.json(response);
+})
