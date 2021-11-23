@@ -117,6 +117,11 @@ SandboxResult run(const SandboxConfig& config) {
   } else {
     // parent process
 
+    // Ignore Ctrl+C signal. Only child process will receive it.
+    struct sigaction sa;
+    sa.sa_handler = SIG_IGN;
+    sigaction(SIGINT, &sa, nullptr);
+
     // prepare for forwarding child process's io
     close(stdin_pipe[0]);
     close(stdout_pipe[1]);
