@@ -55,7 +55,7 @@ export function interactiveExecution(ws: ws, filename: string) {
     if (reqObj.type === 'start') {
       ptyProcess = pty.spawn('../sandbox/bin/sandbox', [
         `--exe_path=${filename}`,
-        '--max_real_time=300000',
+        '--max_cpu_time=1000',
         `--result_path=${tmpResultFile.name}`,
         `--log_path=/dev/null`
       ], {
