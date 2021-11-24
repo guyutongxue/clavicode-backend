@@ -89,7 +89,7 @@ function execCompiler(srcPath: string, noLink: boolean, debugInfo: boolean): Pro
     ];
   }
   return new Promise((resolve) => {
-    execFile('g++', args, {
+    const cp = execFile('g++', args, {
       cwd: cwd,
     }, (error, _, stderr) => {
       if (error) {
@@ -103,8 +103,14 @@ function execCompiler(srcPath: string, noLink: boolean, debugInfo: boolean): Pro
           stderr: stderr,
         });
       }
-    }
-    );
+    });
+    setTimeout(() => {
+      cp.kill();
+      resolve({
+        success: false,
+        stderr: 'timeout'
+      });
+    }, 5 * 1000);
   });
 }
 
