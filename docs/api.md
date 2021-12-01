@@ -324,9 +324,7 @@ type UserGetInfoResponse = {
   success: true;
   username: string;
   authorized: {
-    [key: string]: {
-      courseId: string | null;
-    };
+    [key: string]:string[];
   };
 } | {
   success: false;
@@ -466,8 +464,7 @@ POST $PREFIX/oj/setCourse
 
 ```ts
 type OjSetCourseRequest = {
-  url: string;
-} | {
+  OJtype: string
   courseId: string;
 };
 type OjSetCourseResponse = {

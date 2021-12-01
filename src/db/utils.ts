@@ -21,8 +21,7 @@ export interface User {
   name: string;
   email: string;
   password: string;
-  is_authorized?: boolean;
-  course?: { [key: string]: string };
+  authorized?: Map<string, string[]>;
 }
 
 export interface File {
@@ -36,11 +35,10 @@ const userSchema = new Schema<User>({
   name: { type: String, required: true },
   email: { type: String, required: true },
   password: { type: String, required: true },
-  is_authorized: { type: Boolean, default: false },
-  course: {
-    type: Map,
-    of: String
-  }
+  authorized: {
+    type: Map, 
+    of: [String], 
+  } 
 });
 
 const fileSchema = new Schema<File>({

@@ -28,7 +28,7 @@ import * as tmp from 'tmp';
 import * as path from 'path';
 
 import { connectToMongoDB } from './db/utils';
-import { register, login, authenticateToken, updateName, updatePassword, getUsername, getToken } from './user_system';
+import { register, login, authenticateToken, updateName, updatePassword, getUsername, getToken, getInfo, setCourse, remove } from './user_system';
 import { languageServerHandler } from './language_server';
 import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, OjSubmitRequest, OjSubmitResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserLogoutResponse, UserRegisterRequest, UserRegisterResponse } from './api';
 import { compileHandler } from './compile_handler';
@@ -169,14 +169,6 @@ app.post('/user/login', async (req, res) => {
   }
 });
 
-app.get('/user/username', async (req, res) => {
-  const email = await authenticateToken(req);
-  if (email) {
-    res.json({ success: true, username: await getUsername(email) });
-  } else {
-    res.json({ success: false, reason: "not found" });
-  }
-});
 
 app.post('/user/changePassword', async (req, res) => {
   const request: UserChangePasswordRequest = req.body;
@@ -196,6 +188,46 @@ app.get('/user/logout', async (req, res) => {
   }
 });
 
+app.get('/user/username', async (req, res) => {
+  const email = await authenticateToken(req);
+  if (email) {
+    res.json({ success: true, username: await getUsername(email) });
+  } else {
+    res.json({ success: false, reason: "not found" });
+  }
+});
+
+app.get('/user/delete', async (req, res)=>{
+  const email = await authenticateToken(req);
+  if (email){
+    try{
+    res.clearCookie('token');
+    const suc = await remove(email);
+      res.json({success: suc});
+    }catch(e){
+      res.json({success: false});
+    }
+  }
+  else{
+    res.json({success: false, reason: 'email not found'});
+  }
+});
+
+app.get('/user/getInfo', async(req, res)=>{
+  const email = await authenticateToken(req);
+  if(email){
+    const ret = await getInfo(email);
+    res.json(ret);
+    
+  }else{
+    res.json({success: false});
+  }
+});
+
+app.post('/user/authorize', async(req, res)=>{
+  
+})
+
 app.get('/user/getToken', async (req, res) => {
   const email = await authenticateToken(req);
   if (email) {
@@ -208,6 +240,7 @@ app.get('/user/getToken', async (req, res) => {
   }
   res.json({ success: false });
 });
+
 
 app.post('/user/changeUsername', async (req: Request, res: Response) => {
   const email = await authenticateToken(req);
@@ -275,4 +308,15 @@ app.get('/oj/getSolution/:solutionId', async (req, res) => {
   }
   const response = await getSolution(solutionId);
   res.json(response);
-})
+});
+
+app.post('/oj/setCourse', async (req,res)=>{
+  const email = await authenticateToken(req);
+  console.log(email);
+  if (email){
+    res.json(await setCourse(email, req.body.OJtype, req.body.courseId));
+  }
+  else{
+    res.json({success: false, reason: 'bad header'});
+  }
+});
