@@ -185,12 +185,23 @@ export async function compileHandler(request: CppCompileRequest): Promise<CppCom
         ...executionResult
       };
     }
-    case 'debug':
+    case 'debug': {
+      const id = await save(compileResult.filename);
+      if (id === null) {
+        return {
+          status: 'error',
+          errorType: 'other',
+          error: 'fail to save file'
+        };
+      }
       return {
-        status: 'error',
-        errorType: 'other',
-        error: 'unknown execute type',
+        status: 'ok',
+        execute: 'debug',
+        error: compileResult.error,
+        debugToken: id,
+        expireDate: '10000d',
       };
+    }
     case 'interactive': {
       const id = await save(compileResult.filename);
       if (id === null) {

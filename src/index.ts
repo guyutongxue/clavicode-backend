@@ -35,7 +35,7 @@ import { compileHandler } from './compile_handler';
 import { getHeaderFileHandler } from './get_header_file_handler';
 import { findExecution, interactiveExecution } from './executions/interactive_execution';
 import { getProblem, listProblems, listProblemSets, submitCode } from './oj/fetch';
-
+import{debugExecution}from './debug';
 tmp.setGracefulCleanup();
 // need change to customize local server. 
 dotenv.config({ path: path.join(__dirname, '../.env') });
@@ -66,13 +66,6 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
-// app.use(
-//   jwt({
-//     secret: process.env.JWT_SECRET as string,
-//     getToken: req => req.cookies.token,
-//     algorithms:['HS256']
-//   })
-// );
 
 // connect to the mongodb server; this is a async function should be awaited..
 connectToMongoDB();
@@ -82,6 +75,16 @@ app.ws('/ws/execute/:token', async function (ws, req) {
   console.log("Execute: arrived", filename);
   if (filename !== null) {
     interactiveExecution(ws, filename);
+  } else {
+    ws.close();
+  }
+});
+
+app.ws('/ws/debug/gdb/:token',async function (ws,req) {
+  const filename = await findExecution(req.params.token);
+  console.log("Execute: arrived", filename);
+  if (filename !== null) {
+    debugExecution(ws, filename);
   } else {
     ws.close();
   }

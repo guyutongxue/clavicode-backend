@@ -17,7 +17,7 @@
   "license": "GPL-3.0-or-later",
   "dependencies": {
     "@codingame/monaco-jsonrpc": "^0.3.1",
-    "@gytx/tsgdbmi": "^0.3.2",
+    "@gytx/tsgdbmi": "^0.3.3",
     "bcrypt": "^5.0.1",
     "cheerio": "^1.0.0-rc.10",
     "cookie-parser": "^1.4.5",

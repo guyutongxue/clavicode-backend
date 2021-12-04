@@ -84,14 +84,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gytx/tsgdbmi@npm:^0.3.2":
-  version: 0.3.2
-  resolution: "@gytx/tsgdbmi@npm:0.3.2"
+"@gytx/tsgdbmi@npm:^0.3.3":
+  version: 0.3.3
+  resolution: "@gytx/tsgdbmi@npm:0.3.3"
   dependencies:
     async-mutex: ^0.3.0
     iconv-lite: ^0.6.2
     rxjs: ^7.0.0-beta.10
-  checksum: e199d04b16ea072874aa0f54a6a45896be3dd4689b2c56fc8f849d52757ba852c606b9f0288fc69954282ba3db67c9c0c0e55531934e389ad76bc8989e53f03d
+  checksum: b3b42f50270a8da8fc0944451981a2f9bfd5e8f60147337e840c595af7a63a528eab94758aed10485f97841323ac9b736ce512e3437513b23ede0f62be56946c
   languageName: node
   linkType: hard
 
@@ -1624,7 +1624,7 @@ __metadata:
   resolution: "clavicode-backend@workspace:."
   dependencies:
     "@codingame/monaco-jsonrpc": ^0.3.1
-    "@gytx/tsgdbmi": ^0.3.2
+    "@gytx/tsgdbmi": ^0.3.3
     "@types/bcrypt": ^5.0.0
     "@types/cookie-parser": ^1.4.2
     "@types/cors": ^2.8.12
