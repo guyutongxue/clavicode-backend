@@ -170,6 +170,29 @@ export type UserLoginRequest = {
   password: string;
 };
 
+export type UserGetInfoResponse = {
+  success: true;
+  username: string;
+  authorized: Map<string, string[]> | undefined;
+} | {
+  success: false;
+}
+
+export type OjSetCourseRequest = {
+  url: string;
+} | {
+  courseId: string;
+};
+
+
+export type OjSetCourseResponse = {
+  success: true;
+  // title: string;
+} | {
+  success: false;
+  reason: string;
+};
+
 export type UserLoginResponse = UserRegisterResponse;
 
 export type UserLogoutResponse = UserRegisterResponse;
@@ -258,13 +281,6 @@ export type OjSetCourseRequest = {
   url: string;
 } | {
   courseId: string;
-};
-export type OjSetCourseResponse = {
-  success: true;
-  title: string;
-} | {
-  success: false;
-  reason: string;
 };
 
 export type OjSubmitHistoryResponse = {

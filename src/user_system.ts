@@ -21,7 +21,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import * as path from 'path';
 import { Request, Response } from 'express';
-import { UserRegisterRequest, UserLoginRequest, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse } from './api';
+import { UserRegisterRequest, UserLoginRequest, UserChangePasswordRequest, UserGetInfoResponse, UserChangeUsernameResponse, OjSetCourseResponse } from './api';
 
 export type UserSysResponse = {
   success: boolean;
@@ -40,7 +40,7 @@ export async function register(body: UserRegisterRequest): Promise<UserSysRespon
     name: body.username,
     email: body.email,
     password: await bcrypt.hash(body.password, 10),
-    is_authorized: false,
+    authorized: new Map<string, string[]>(), 
   });
   await user.save();
   return { success: true };
@@ -104,8 +104,18 @@ export async function logout(email: string): Promise<boolean>{
   return true;
 }
 
-export async function remove(email: string): Promise<void>{
-  UserModel.find({email: email}).remove();
+export async function remove(email: string): Promise<boolean>{
+  try {
+    await UserModel.findOneAndDelete({email: email});
+    const user = UserModel.find({email: email});
+    if(user){
+      console.log(user);
+      console.log('delete failed');
+    }
+    return true;
+  }catch(e){
+    return false;
+  }
 }
 
 export async function authenticateToken(req: Request): Promise<string | null> {
@@ -117,4 +127,39 @@ export async function authenticateToken(req: Request): Promise<string | null> {
       else resolve(decoded.email);
     });
   });
+}
+
+export async function getInfo(email: string): Promise<UserGetInfoResponse>{
+  const user = await UserModel.findOne({email: email});
+  if (user){
+    return {success: true, username: user.name, authorized: user.authorized};
+  }
+  return {success: false};
+}
+
+export async function setCourse(email: string, OJtype: string, courseId: string): Promise<OjSetCourseResponse> {
+  const user = await UserModel.findOne({email: email});
+  console.log(OJtype, courseId);
+  if(user){  
+    try{
+      if(user.authorized){
+        let courses = user.authorized.get(OJtype);
+        if(courses){
+          courses.push(courseId);
+        }else {
+          courses = [courseId];
+        }
+        console.log(courses);
+        user.authorized.set(OJtype, courses);
+        await user.save();
+        return {success: true};
+      }
+      else {
+        return {success: false, reason: 'authorize undefined'};
+      }
+    }catch(e){
+      return {success: false, reason: 'set failed'};
+    }
+  }
+  return {success: false, reason: 'user not found'};
 }
