@@ -219,6 +219,7 @@ ws://$PREFIX/ws/debug/gdb/$DEBUG_TOKEN
 ```ts
 type WsDebugGdbC2S = {
   type: 'start';
+  startupCommands: string[];
 } | {
   type: 'request';
   request: string;

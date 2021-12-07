@@ -114,8 +114,9 @@ export type WsExecuteS2C = {
   content: string;
 }
 
-type WsDebugGdbC2S = {
+export type WsDebugGdbC2S = {
   type: 'start';
+  startupCommands: string[];
 } | {
   type: 'request';
   request: string;
@@ -125,7 +126,7 @@ type WsDebugGdbC2S = {
 } | {
   type: 'shutdown';
 };
-type WsDebugGdbS2C = {
+export type WsDebugGdbS2C = {
   type: 'started';
   sourceFilePath: string;
 } | {

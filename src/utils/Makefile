@@ -1,6 +1,5 @@
 PROGS=\
-	bin/pause\
-	bin/sleep_n_rm
+	bin/pause
 
 all: $(PROGS)
 .PHONY: all
