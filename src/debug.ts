@@ -64,7 +64,7 @@ export function debugExecution(ws: ws, filename: string) {
     });
   }
 
-  async function onStart(commands: string[]) {
+  async function onStart() {
     stage = 'silent';
     gdb.launch('gdb', []);
     let pausedEvent: EventEmitter | null = new EventEmitter();
@@ -87,10 +87,6 @@ export function debugExecution(ws: ws, filename: string) {
       gdb.sendRequest('-exec-run');
     });
     await gdb.sendRequest(`-file-exec-and-symbols "${filename}"`);
-    for (const command of commands) {
-      await gdb.sendRequest(command);
-    }
-    await gdb.sendRequest(`-exec-continue`);
     stage = 'forward';
     send({
       type: 'started',
@@ -103,7 +99,7 @@ export function debugExecution(ws: ws, filename: string) {
     console.log(reqObj);
     switch (reqObj.type) {
       case 'start': {
-        onStart(reqObj.startupCommands);
+        onStart();
         break;
       }
       case 'request': {

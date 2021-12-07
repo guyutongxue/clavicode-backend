@@ -116,7 +116,6 @@ export type WsExecuteS2C = {
 
 export type WsDebugGdbC2S = {
   type: 'start';
-  startupCommands: string[];
 } | {
   type: 'request';
   request: string;
