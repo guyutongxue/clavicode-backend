@@ -35,6 +35,7 @@ import { compileHandler } from './compile_handler';
 import { getHeaderFileHandler } from './get_header_file_handler';
 import { findExecution, interactiveExecution } from './executions/interactive_execution';
 import { getProblem, getSolution, listProblems, listProblemSets, submitCode } from './oj/fetch';
+import { debugExecution } from './debug';
 
 tmp.setGracefulCleanup();
 // need change to customize local server. 
@@ -82,7 +83,7 @@ app.ws('/ws/execute/:token', async function (ws, req) {
 
 app.ws('/ws/debug/gdb/:token',async function (ws,req) {
   const filename = await findExecution(req.params.token);
-  console.log("Execute: arrived", filename);
+  console.log("GDB: arrived", filename);
   if (filename !== null) {
     debugExecution(ws, filename);
   } else {

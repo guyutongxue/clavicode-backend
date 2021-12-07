@@ -40,7 +40,7 @@ export async function register(body: UserRegisterRequest): Promise<UserSysRespon
     name: body.username,
     email: body.email,
     password: await bcrypt.hash(body.password, 10),
-    authorized: new Map<string, string[]>(), 
+    authorized: new Map<string, string[]>(),
   });
   await user.save();
   return { success: true };
@@ -73,7 +73,7 @@ export async function updateName(email: string, username: string): Promise<UserC
 }
 
 export async function getUsername(email: string): Promise<string> {
-  const user = await UserModel.findOne({email});
+  const user = await UserModel.findOne({ email });
   if (user) {
     return user.name;
   }
@@ -92,28 +92,28 @@ export async function login(body: UserLoginRequest): Promise<UserSysResponse> {
   return { success: false };
 }
 
-export async function getToken(email: string): Promise<UserSysResponse>{
+export async function getToken(email: string): Promise<UserSysResponse> {
   const token = jwt.sign({ email }, process.env.JWT_SECRET as string, { expiresIn: '1h' });
   return { success: true, token: token };
 }
 
-export async function logout(email: string): Promise<boolean>{
-  const user = await UserModel.findOne({email: email});
-  if (! user)
+export async function logout(email: string): Promise<boolean> {
+  const user = await UserModel.findOne({ email: email });
+  if (!user)
     return false;
   return true;
 }
 
-export async function remove(email: string): Promise<boolean>{
+export async function remove(email: string): Promise<boolean> {
   try {
-    await UserModel.findOneAndDelete({email: email});
-    const user = UserModel.find({email: email});
-    if(user){
+    await UserModel.findOneAndDelete({ email: email });
+    const user = UserModel.find({ email: email });
+    if (user) {
       console.log(user);
       console.log('delete failed');
     }
     return true;
-  }catch(e){
+  } catch (e) {
     return false;
   }
 }
@@ -129,37 +129,37 @@ export async function authenticateToken(req: Request): Promise<string | null> {
   });
 }
 
-export async function getInfo(email: string): Promise<UserGetInfoResponse>{
-  const user = await UserModel.findOne({email: email});
-  if (user){
-    return {success: true, username: user.name, authorized: user.authorized};
+export async function getInfo(email: string): Promise<UserGetInfoResponse> {
+  const user = await UserModel.findOne({ email: email });
+  if (user) {
+    return { success: true, username: user.name, authorized: user.authorized };
   }
-  return {success: false};
+  return { success: false };
 }
 
 export async function setCourse(email: string, OJtype: string, courseId: string): Promise<OjSetCourseResponse> {
-  const user = await UserModel.findOne({email: email});
+  const user = await UserModel.findOne({ email: email });
   console.log(OJtype, courseId);
-  if(user){  
-    try{
-      if(user.authorized){
+  if (user) {
+    try {
+      if (user.authorized) {
         let courses = user.authorized.get(OJtype);
-        if(courses){
+        if (courses) {
           courses.push(courseId);
-        }else {
+        } else {
           courses = [courseId];
         }
         console.log(courses);
         user.authorized.set(OJtype, courses);
         await user.save();
-        return {success: true};
+        return { success: true };
       }
       else {
-        return {success: false, reason: 'authorize undefined'};
+        return { success: false, reason: 'authorize undefined' };
       }
-    }catch(e){
-      return {success: false, reason: 'set failed'};
+    } catch (e) {
+      return { success: false, reason: 'set failed' };
     }
   }
-  return {success: false, reason: 'user not found'};
+  return { success: false, reason: 'user not found' };
 }
