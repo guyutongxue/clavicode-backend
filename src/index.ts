@@ -81,7 +81,7 @@ app.ws('/ws/execute/:token', async function (ws, req) {
   }
 });
 
-app.ws('/ws/debug/gdb/:token',async function (ws,req) {
+app.ws('/ws/debug/gdb/:token', async function (ws, req) {
   const filename = await findExecution(req.params.token);
   console.log("GDB: arrived", filename);
   if (filename !== null) {
@@ -201,35 +201,35 @@ app.get('/user/username', async (req, res) => {
   }
 });
 
-app.get('/user/delete', async (req, res)=>{
+app.get('/user/delete', async (req, res) => {
   const email = await authenticateToken(req);
-  if (email){
-    try{
-    res.clearCookie('token');
-    const suc = await remove(email);
-      res.json({success: suc});
-    }catch(e){
-      res.json({success: false});
+  if (email) {
+    try {
+      res.clearCookie('token');
+      const suc = await remove(email);
+      res.json({ success: suc });
+    } catch (e) {
+      res.json({ success: false });
     }
   }
-  else{
-    res.json({success: false, reason: 'email not found'});
+  else {
+    res.json({ success: false, reason: 'email not found' });
   }
 });
 
-app.get('/user/getInfo', async(req, res)=>{
+app.get('/user/getInfo', async (req, res) => {
   const email = await authenticateToken(req);
-  if(email){
+  if (email) {
     const ret = await getInfo(email);
     res.json(ret);
-    
-  }else{
-    res.json({success: false});
+
+  } else {
+    res.json({ success: false });
   }
 });
 
-app.post('/user/authorize', async(req, res)=>{
-  
+app.post('/user/authorize', async (req, res) => {
+
 })
 
 app.get('/user/getToken', async (req, res) => {
@@ -314,13 +314,13 @@ app.get('/oj/getSolution/:solutionId', async (req, res) => {
   res.json(response);
 });
 
-app.post('/oj/setCourse', async (req,res)=>{
+app.post('/oj/setCourse', async (req, res) => {
   const email = await authenticateToken(req);
   console.log(email);
-  if (email){
+  if (email) {
     res.json(await setCourse(email, req.body.OJtype, req.body.courseId));
   }
-  else{
-    res.json({success: false, reason: 'bad header'});
+  else {
+    res.json({ success: false, reason: 'bad header' });
   }
 });
