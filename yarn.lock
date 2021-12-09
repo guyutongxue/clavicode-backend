@@ -84,15 +84,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gytx/tsgdbmi@portal:/home/guyutongxue/tsgdbmi::locator=clavicode-backend%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@gytx/tsgdbmi@portal:/home/guyutongxue/tsgdbmi::locator=clavicode-backend%40workspace%3A."
+"@gytx/tsgdbmi@npm:0.4.0":
+  version: 0.4.0
+  resolution: "@gytx/tsgdbmi@npm:0.4.0"
   dependencies:
     async-mutex: ^0.3.0
     iconv-lite: ^0.6.2
-    rxjs: ^7.0.0-beta.10
+    rxjs: ^7.4.0
+  checksum: bdcb85e1e362ccd7763928c82bb7aae322ff436cb024d139afa291c5ff21acd73042b491195be39790d50080628ac820e5e19d2b8dc76c26bd7611a5c7f13223
   languageName: node
-  linkType: soft
+  linkType: hard
 
 "@humanwhocodes/config-array@npm:^0.6.0":
   version: 0.6.0
@@ -1623,7 +1624,7 @@ __metadata:
   resolution: "clavicode-backend@workspace:."
   dependencies:
     "@codingame/monaco-jsonrpc": ^0.3.1
-    "@gytx/tsgdbmi": ^0.3.3
+    "@gytx/tsgdbmi": 0.4.0
     "@types/bcrypt": ^5.0.0
     "@types/cookie-parser": ^1.4.2
     "@types/cors": ^2.8.12
@@ -4941,7 +4942,7 @@ resolve@^1.9.0:
   languageName: node
   linkType: hard
 
-"rxjs@npm:^7.0.0-beta.10":
+"rxjs@npm:^7.4.0":
   version: 7.4.0
   resolution: "rxjs@npm:7.4.0"
   dependencies:
