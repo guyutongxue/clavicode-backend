@@ -41,7 +41,6 @@ function emit(req: WsDebugGdbC2S) {
 
 (async () => {
   debugExecution(w, path.join(__dirname, './debugTest.exe'));
-  await new Promise(resolve => setTimeout(resolve, 500));
   emit({
     type: 'start'
   });
@@ -50,13 +49,7 @@ function emit(req: WsDebugGdbC2S) {
   }
   emit({
     type: 'request',
-    request: '-break-insert main'
+    request: '201-break-list'
   });
-  await new Promise(resolve => setTimeout(resolve, 3000));
-  emit({
-    type: 'request',
-    request: '-exec-continue'
-  });
-
   while (true) {}
 })();

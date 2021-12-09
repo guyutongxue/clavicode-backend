@@ -84,16 +84,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gytx/tsgdbmi@npm:^0.3.3":
-  version: 0.3.3
-  resolution: "@gytx/tsgdbmi@npm:0.3.3"
+"@gytx/tsgdbmi@portal:/home/guyutongxue/tsgdbmi::locator=clavicode-backend%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@gytx/tsgdbmi@portal:/home/guyutongxue/tsgdbmi::locator=clavicode-backend%40workspace%3A."
   dependencies:
     async-mutex: ^0.3.0
     iconv-lite: ^0.6.2
     rxjs: ^7.0.0-beta.10
-  checksum: b3b42f50270a8da8fc0944451981a2f9bfd5e8f60147337e840c595af7a63a528eab94758aed10485f97841323ac9b736ce512e3437513b23ede0f62be56946c
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "@humanwhocodes/config-array@npm:^0.6.0":
   version: 0.6.0

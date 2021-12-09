@@ -68,25 +68,34 @@ export function debugExecution(ws: ws, filename: string) {
     gdb.launch('gdb', [], {
       cwd: CWD,
     });
-    let pausedEvent: EventEmitter | null = new EventEmitter();
+    const pausedEvent = new EventEmitter();
     gdb.onResponse((res) => {
-      if (pausedEvent !== null && res.type === 'notify' && res.message === 'stopped') {
-        pausedEvent.emit('paused', res);
-        pausedEvent = null;
+      if (stage === 'silent') {
+        if (res.type === 'notify' && res.message === 'stopped') {
+          pausedEvent.emit('paused', res);
+        }
+        if (res.type === 'result' && res.token === 106) {
+          pausedEvent.emit('ready', res);
+        }
       }
       onResponse(res);
     });
     gdb.onClose(onClose);
-    await gdb.sendRequest('-gdb-set follow-fork-mode child');
-    await gdb.sendRequest('catch exec');
-    await gdb.sendRequest(`-inferior-tty-set ${deviceName.trim()}`);
-    await gdb.sendRequest(`-file-exec-and-symbols "${SANDBOX_PATH}"`);
-    await gdb.sendRequest(`-gdb-set args --exe_path="${filename}"`);
+    gdb.sendRequest('100-gdb-set follow-fork-mode child');
+    gdb.sendRequest('catch exec');
+    gdb.sendRequest(`102-inferior-tty-set ${deviceName}`);
+    gdb.sendRequest(`103-file-exec-and-symbols "${SANDBOX_PATH}"`);
+    gdb.sendRequest(`104-gdb-set args --exe_path="${filename}"`);
     await new Promise<void>((resolve) => {
-      pausedEvent?.addListener('paused', () => resolve());
-      gdb.sendRequest('-exec-run');
+      pausedEvent.once('paused', () => resolve());
+      gdb.sendRequest('105-exec-run');
     });
-    await gdb.sendRequest(`-file-exec-and-symbols "${filename}"`);
+    await new Promise<void>((resolve) => {
+      pausedEvent.once('ready', () => resolve());
+      gdb.sendRequest(`106-file-exec-and-symbols "${filename}"`);
+    });
+    gdb.sendRequest('107-break-list');
+    gdb.sendRequest('108-break-list');
     stage = 'forward';
     send({
       type: 'started',
@@ -96,14 +105,16 @@ export function debugExecution(ws: ws, filename: string) {
 
   ws.on('message', async (req: Buffer) => {
     const reqObj: WsDebugGdbC2S = JSON.parse(req.toString());
-    console.log(reqObj);
     switch (reqObj.type) {
       case 'start': {
         onStart();
         break;
       }
       case 'request': {
-        console.log(await gdb.sendRequest(reqObj.request));
+        console.log("RRR");
+        await gdb.sendRequest('151-break-list');
+        await gdb.sendRequest('152-break-list');
+        // gdb.sendRequest(reqObj.request);
         break;
       }
       case 'tin': {
