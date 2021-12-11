@@ -8,7 +8,7 @@ import EventEmitter from "events";
 export function debugExecution(ws: ws, filename: string) {
   type Stage = 'init' | 'forward' | 'silent';
   let stage: Stage = 'init';
-  let deviceName  = "";
+  let deviceName = "";
 
   function send(msg: WsDebugGdbS2C) {
     ws.send(Buffer.from(JSON.stringify(msg)));
@@ -21,7 +21,7 @@ export function debugExecution(ws: ws, filename: string) {
     cwd: process.cwd(),
     env: process.env as { [key: string]: string },
   });
-  ptyProcess.onData(function (data) {
+  ptyProcess.onData((data) => {
     switch (stage) {
       case 'init': {
         deviceName += data;
@@ -49,10 +49,12 @@ export function debugExecution(ws: ws, filename: string) {
   const CWD = path.join(__dirname, './sandbox/bin');
 
   function onResponse(res: GdbResponse) {
-    send({
-      type: 'response',
-      response: res
-    });
+    if (stage === 'forward') {
+      send({
+        type: 'response',
+        response: res
+      });
+    }
   }
 
   function onClose() {
@@ -64,6 +66,9 @@ export function debugExecution(ws: ws, filename: string) {
   }
 
   async function onStart() {
+    while (deviceName === '') {
+      await new Promise((r) => setTimeout(r, 100));
+    }
     stage = 'silent';
     gdb.launch('gdb', [], {
       cwd: CWD,
@@ -83,9 +88,9 @@ export function debugExecution(ws: ws, filename: string) {
     gdb.onClose(onClose);
     gdb.sendRequest('100-gdb-set follow-fork-mode child');
     gdb.sendRequest('catch exec');
-    gdb.sendRequest(`102-inferior-tty-set ${deviceName}`);
+    gdb.sendRequest(`102-inferior-tty-set ${deviceName.trim()}`);
     gdb.sendRequest(`103-file-exec-and-symbols "${SANDBOX_PATH}"`);
-    gdb.sendRequest(`104-gdb-set args --exe_path="${filename}"`);
+    gdb.sendRequest(`104-gdb-set args --debug-mode --exe_path="${filename}"`);
     await new Promise<void>((resolve) => {
       pausedEvent.once('paused', () => resolve());
       gdb.sendRequest('105-exec-run');
@@ -94,8 +99,6 @@ export function debugExecution(ws: ws, filename: string) {
       pausedEvent.once('ready', () => resolve());
       gdb.sendRequest(`106-file-exec-and-symbols "${filename}"`);
     });
-    gdb.sendRequest('107-break-list');
-    gdb.sendRequest('108-break-list');
     stage = 'forward';
     send({
       type: 'started',
@@ -111,10 +114,7 @@ export function debugExecution(ws: ws, filename: string) {
         break;
       }
       case 'request': {
-        console.log("RRR");
-        await gdb.sendRequest('151-break-list');
-        await gdb.sendRequest('152-break-list');
-        // gdb.sendRequest(reqObj.request);
+        gdb.sendRequest(reqObj.request);
         break;
       }
       case 'tin': {

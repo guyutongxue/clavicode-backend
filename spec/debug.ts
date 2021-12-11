@@ -19,16 +19,26 @@ import { debugExecution } from "../src/debug";
 import ws from "ws";
 import * as path from 'path';
 import EventEmitter from "events";
+import 'colors';
 import { WsDebugGdbC2S, WsDebugGdbS2C } from "../src/api";
 
-let started = false;
+const event = new EventEmitter();
 
 class WsTest extends EventEmitter {
   send(data: Buffer) {
     const res: WsDebugGdbS2C = JSON.parse(data.toString());
     console.log(JSON.stringify(res));
     if (res.type === 'started') {
-      started = true;
+      event.emit('started');
+    } else if (res.type === 'response') {
+      const r = res.response;
+      if (r.type === 'notify' && r.message === 'running') {
+        event.emit('run1', res);
+      } else if (r.type === 'notify' && r.message === 'stopped') {
+        event.emit('stop1', res);
+      }
+    } else if (res.type === 'tout') {
+      console.log(res.content.italic);
     }
   }
 }
@@ -41,15 +51,33 @@ function emit(req: WsDebugGdbC2S) {
 
 (async () => {
   debugExecution(w, path.join(__dirname, './debugTest.exe'));
-  emit({
-    type: 'start'
+  await new Promise<void>(r => {
+    event.once('started', r);
+    emit({
+      type: 'start'
+    });
   });
-  while (!started) {
-    await new Promise(resolve => setTimeout(resolve, 500));
-  }
   emit({
     type: 'request',
-    request: '201-break-list'
+    request: `201-break-insert ${path.join(__dirname, './debugTest.cpp')}:5`
   });
-  while (true) {}
+  await new Promise<void>((r) => {
+    event.once('run1', r);
+    emit({
+      type: 'request',
+      request: '202-exec-continue'
+    });
+  });
+  await new Promise<void>((r) => {
+    event.once('stop1', r);
+    emit({
+      type: 'tin',
+      content: '56 32\r'
+    });
+  });
+  emit({
+    type: 'request',
+    request: '203-stack-list-locals --all-values'
+  });
+  await new Promise(resolve => setTimeout(resolve, 60000));
 })();

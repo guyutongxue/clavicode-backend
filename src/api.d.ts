@@ -1,4 +1,4 @@
-import { GdbResponse } from 'tsgdbmi';
+import { GdbResponse } from '@gytx/tsgdbmi';
 
 export interface GccDiagnosticPosition {
   file: string;
