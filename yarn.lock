@@ -84,16 +84,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gytx/tsgdbmi@npm:0.4.0":
-  version: 0.4.0
-  resolution: "@gytx/tsgdbmi@npm:0.4.0"
+"@gytx/tsgdbmi@portal:/home/guyutongxue/repos/tsgdbmi::locator=clavicode-backend%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@gytx/tsgdbmi@portal:/home/guyutongxue/repos/tsgdbmi::locator=clavicode-backend%40workspace%3A."
   dependencies:
-    async-mutex: ^0.3.0
+    colors: ^1.4.0
     iconv-lite: ^0.6.2
     rxjs: ^7.4.0
-  checksum: bdcb85e1e362ccd7763928c82bb7aae322ff436cb024d139afa291c5ff21acd73042b491195be39790d50080628ac820e5e19d2b8dc76c26bd7611a5c7f13223
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "@humanwhocodes/config-array@npm:^0.6.0":
   version: 0.6.0
@@ -1243,15 +1242,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"async-mutex@npm:^0.3.0":
-  version: 0.3.2
-  resolution: "async-mutex@npm:0.3.2"
-  dependencies:
-    tslib: ^2.3.1
-  checksum: 620b771dfdea1cad0a6b712915c31a1e3ca880a8cf1eae92b4590f435995e0260929c6ebaae0b9126b1456790ea498064b5bb9a506948cda760f48d3d0dcc4c8
-  languageName: node
-  linkType: hard
-
 "async@npm:^1.5.0":
   version: 1.5.2
   resolution: "async@npm:1.5.2"
@@ -1646,6 +1636,7 @@ __metadata:
     "@yarnpkg/pnpify": ^3.1.0-rc.1
     bcrypt: ^5.0.1
     cheerio: ^1.0.0-rc.10
+    colors: ^1.4.0
     cookie-parser: ^1.4.5
     cors: ^2.8.5
     dotenv: ^10.0.0
@@ -1670,7 +1661,7 @@ __metadata:
     tmp: ^0.2.1
     ts-loader: ^9.2.6
     ts-node: ^10.2.1
-    typescript: ^4.4.4
+    typescript: ~4.4.4
     uuid: ^8.3.2
     vscode-languageserver: ^7.0.0
     webpack: ^5.55.1
@@ -1775,7 +1766,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"colors@npm:1.4.0":
+"colors@npm:1.4.0, colors@npm:^1.4.0":
   version: 1.4.0
   resolution: "colors@npm:1.4.0"
   checksum: 98aa2c2418ad87dedf25d781be69dc5fc5908e279d9d30c34d8b702e586a0474605b3a189511482b9d5ed0d20c867515d22749537f7bc546256c6014f3ebdcec
@@ -5546,7 +5537,7 @@ resolve@^1.9.0:
   languageName: node
   linkType: hard
 
-"tslib@npm:^2.2.0, tslib@npm:^2.3.1":
+"tslib@npm:^2.2.0":
   version: 2.3.1
   resolution: "tslib@npm:2.3.1"
   checksum: de17a98d4614481f7fcb5cd53ffc1aaf8654313be0291e1bfaee4b4bb31a20494b7d218ff2e15017883e8ea9626599b3b0e0229c18383ba9dce89da2adf15cb9
@@ -5620,23 +5611,23 @@ resolve@^1.9.0:
   languageName: node
   linkType: hard
 
-typescript@^4.4.4:
-  version: 4.4.4
-  resolution: "typescript@npm:4.4.4"
-  bin:
-    tsc: bin/tsc
-    tsserver: bin/tsserver
-  checksum: 89ecb8436bb48ef5594d49289f5f89103071716b6e4844278f4fb3362856e31203e187a9c76d205c3f0b674d221a058fd28310dbcbcf5d95e9a57229bb5203f1
-  languageName: node
-  linkType: hard
-
-"typescript@patch:typescript@^4.4.4#~builtin<compat/typescript>":
+"typescript@patch:typescript@~4.4.4#~builtin<compat/typescript>":
   version: 4.4.4
   resolution: "typescript@patch:typescript@npm%3A4.4.4#~builtin<compat/typescript>::version=4.4.4&hash=32657b"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: c97c33903f1eb4f9e178649befdfc859d93157db1eccd1e521e84976ec6861db53412d8018e5e4c5d09268771c65498d42caa64bd881878346c3644f6b7cd202
+  languageName: node
+  linkType: hard
+
+typescript@~4.4.4:
+  version: 4.4.4
+  resolution: "typescript@npm:4.4.4"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 89ecb8436bb48ef5594d49289f5f89103071716b6e4844278f4fb3362856e31203e187a9c76d205c3f0b674d221a058fd28310dbcbcf5d95e9a57229bb5203f1
   languageName: node
   linkType: hard
 
