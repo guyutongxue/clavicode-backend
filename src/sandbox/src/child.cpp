@@ -69,6 +69,11 @@ ErrorType c_cpp_seccomp_rules(const SandboxConfig& config) {
       SCMP_SYS(lseek),      SCMP_SYS(clock_gettime), SCMP_SYS(getpid),
       SCMP_SYS(gettid)};
 
+  int debug_whitelist[]{SCMP_SYS(set_tid_address), SCMP_SYS(set_robust_list),
+                        SCMP_SYS(uname),           SCMP_SYS(prlimit64),
+                        SCMP_SYS(readlink),        SCMP_SYS(getrandom),
+                        SCMP_SYS(newfstatat)};
+
   scmp_filter_ctx ctx{seccomp_init(SCMP_ACT_KILL)};
   if (!ctx) {
     return ErrorType::LOAD_SECCOMP_FAILED;
@@ -76,6 +81,13 @@ ErrorType c_cpp_seccomp_rules(const SandboxConfig& config) {
   for (auto sysc : syscalls_whitelist) {
     if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, sysc, 0) != 0) {
       return ErrorType::LOAD_SECCOMP_FAILED;
+    }
+  }
+  if (config.debug_mode) {
+    for (auto sysc : debug_whitelist) {
+      if (seccomp_rule_add(ctx, SCMP_ACT_ALLOW, sysc, 0) != 0) {
+        return ErrorType::LOAD_SECCOMP_FAILED;
+      }
     }
   }
   // add extra rule for execve

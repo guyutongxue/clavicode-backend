@@ -28,6 +28,7 @@ struct SandboxConfig {
   int max_process_number;
   long max_output_size;
   // int memory_limit_check_only;
+  bool debug_mode;
   std::string exe_path;
   std::string input_path;
   std::string output_path;

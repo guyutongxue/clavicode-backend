@@ -52,15 +52,16 @@ int main(int argc, char** argv) {
     OPTION(max_process_number, UNLIMITED, "Max process number")
     OPTION(max_output_size, UNLIMITED, "Max output size (B)")
     OPTION(exe_path, ""s, "Executable path")
-    OPTION(input_path, "/dev/stdin"s, "Input path")
-    OPTION(output_path, "/dev/stdout"s, "Output path")
-    OPTION(error_path, "/dev/stderr"s, "Error path")
+    OPTION(input_path, ""s, "Input path")
+    OPTION(output_path, ""s, "Output path")
+    OPTION(error_path, ""s, "Error path")
     OPTION_VEC(args, "Arguments")
     OPTION_VEC(env, "Environment variables")
     OPTION(log_path, "sandbox.log"s, "Log path")
     OPTION(result_path, "result.json"s, "Result path")
     OPTION(uid, 65534, "User ID")
     OPTION(gid, 65534, "Group ID")
+    ("debug-mode", po::bool_switch(&config.debug_mode), "Debug mode")
   ;
   // clang-format on
 

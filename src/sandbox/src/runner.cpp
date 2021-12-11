@@ -88,8 +88,11 @@ SandboxResult run(const SandboxConfig& config) {
   int stdin_pipe[2];
   int stdout_pipe[2];
   int stderr_pipe[2];
-  if (pipe(stdin_pipe) < 0 || pipe(stdout_pipe) < 0 || pipe(stderr_pipe) < 0) {
-    error_exit(ErrorType::DUP2_FAILED);
+  if (!config.debug_mode) {
+    if (pipe(stdin_pipe) < 0 || pipe(stdout_pipe) < 0 ||
+        pipe(stderr_pipe) < 0) {
+      error_exit(ErrorType::DUP2_FAILED);
+    }
   }
 
   timeval start, end;
@@ -101,18 +104,20 @@ SandboxResult run(const SandboxConfig& config) {
   }
   if (child_pid == 0) {
     // child process
-    close(stdin_pipe[1]);
-    close(stdout_pipe[0]);
-    close(stderr_pipe[0]);
-    if (dup2(stdin_pipe[0], STDIN_FILENO) < 0 ||
-        dup2(stdout_pipe[1], STDOUT_FILENO) < 0 ||
-        dup2(stderr_pipe[1], STDERR_FILENO) < 0) {
-      error_exit(ErrorType::DUP2_FAILED);
+    if (!config.debug_mode) {
+      close(stdin_pipe[1]);
+      close(stdout_pipe[0]);
+      close(stderr_pipe[0]);
+      if (dup2(stdin_pipe[0], STDIN_FILENO) < 0 ||
+          dup2(stdout_pipe[1], STDOUT_FILENO) < 0 ||
+          dup2(stderr_pipe[1], STDERR_FILENO) < 0) {
+        error_exit(ErrorType::DUP2_FAILED);
+      }
+      close(stdin_pipe[0]);
+      close(stdout_pipe[1]);
+      close(stderr_pipe[1]);
     }
-    close(stdin_pipe[0]);
-    close(stdout_pipe[1]);
-    close(stderr_pipe[1]);
-    
+
     child(config);
   } else {
     // parent process
@@ -123,10 +128,13 @@ SandboxResult run(const SandboxConfig& config) {
     sigaction(SIGINT, &sa, nullptr);
 
     // prepare for forwarding child process's io
-    close(stdin_pipe[0]);
-    close(stdout_pipe[1]);
-    close(stderr_pipe[1]);
-    fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) | O_NONBLOCK);
+    if (!config.debug_mode) {
+      close(stdin_pipe[0]);
+      close(stdout_pipe[1]);
+      close(stderr_pipe[1]);
+      fcntl(STDIN_FILENO, F_SETFL,
+            fcntl(STDIN_FILENO, F_GETFL, 0) | O_NONBLOCK);
+    }
 
     if (config.max_real_time != UNLIMITED) {
       std::thread killer([&]() {
@@ -140,61 +148,67 @@ SandboxResult run(const SandboxConfig& config) {
     int retval;
     rusage resource_usage;
 
-    std::thread read_stdout([&]() {
-      int size;
-      char buf[256];
-      while ((size = read(stdout_pipe[0], buf, sizeof(buf)))) {
-        if (size == -1) {
-          if (errno != EINTR) {
-            kill(child_pid, SIGKILL);
-            error_exit(ErrorType::FORWARD_IO_FAILED);
+    if (!config.debug_mode) {
+      std::thread read_stdout([&]() {
+        int size;
+        char buf[256];
+        while ((size = read(stdout_pipe[0], buf, sizeof(buf)))) {
+          if (size == -1) {
+            if (errno != EINTR) {
+              kill(child_pid, SIGKILL);
+              error_exit(ErrorType::FORWARD_IO_FAILED);
+            }
+          } else {
+            write(STDOUT_FILENO, buf, size);
           }
-        } else {
-          write(STDOUT_FILENO, buf, size);
         }
-      }
-      close(stdout_pipe[0]);
-    });
-    std::thread read_stderr([&]() {
-      char size;
-      char buf[256];
-      while ((size = read(stderr_pipe[0], buf, sizeof(buf)))) {
-        if (size == -1) {
-          if (errno != EINTR) {
-            kill(child_pid, SIGKILL);
-            error_exit(ErrorType::FORWARD_IO_FAILED);
+        close(stdout_pipe[0]);
+      });
+      read_stdout.join();
+      std::thread read_stderr([&]() {
+        char size;
+        char buf[256];
+        while ((size = read(stderr_pipe[0], buf, sizeof(buf)))) {
+          if (size == -1) {
+            if (errno != EINTR) {
+              kill(child_pid, SIGKILL);
+              error_exit(ErrorType::FORWARD_IO_FAILED);
+            }
+          } else {
+            write(STDERR_FILENO, buf, size);
           }
-        } else {
-          write(STDERR_FILENO, buf, size);
         }
-      }
-      close(stderr_pipe[0]);
-    });
+        close(stderr_pipe[0]);
+      });
+      read_stderr.join();
+    }
 
-    while ((retval = wait4(child_pid, &status, WNOHANG | WSTOPPED,
-                           &resource_usage)) != child_pid) {
+    const int WAIT_OPT = config.debug_mode ? WSTOPPED : WNOHANG | WSTOPPED;
+
+    while ((retval = wait4(child_pid, &status, WAIT_OPT, &resource_usage)) !=
+           child_pid) {
       if (retval == -1) {
         kill(child_pid, SIGKILL);
         error_exit(ErrorType::WAIT_FAILED);
       }
 
       // Forward child process io
-      int size;
-      char buf[256];
-      if ((size = read(STDIN_FILENO, buf, sizeof(buf))) == -1) {
-        if (errno != EAGAIN && errno != EINTR) {
-          kill(child_pid, SIGKILL);
-          error_exit(ErrorType::FORWARD_IO_FAILED);
+      if (!config.debug_mode) {
+        int size;
+        char buf[256];
+        if ((size = read(STDIN_FILENO, buf, sizeof(buf))) == -1) {
+          if (errno != EAGAIN && errno != EINTR) {
+            kill(child_pid, SIGKILL);
+            error_exit(ErrorType::FORWARD_IO_FAILED);
+          }
+        } else if (size == 0) {
+          // EOF
+          close(stdin_pipe[1]);
+        } else {
+          write(stdin_pipe[1], buf, size);
         }
-      } else if (size == 0) {
-        // EOF
-        close(stdin_pipe[1]);
-      } else {
-        write(stdin_pipe[1], buf, size);
       }
     }
-    read_stdout.join();
-    read_stderr.join();
 
     gettimeofday(&end, nullptr);
 
