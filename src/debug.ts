@@ -5,7 +5,7 @@ import ws from "ws";
 import path from "path";
 import EventEmitter from "events";
 
-export function debugExecution(ws: ws, filename: string) {
+export async function debugExecution(ws: ws, filename: string) {
   type Stage = 'init' | 'forward' | 'silent';
   let stage: Stage = 'init';
   let deviceName = "";
@@ -45,7 +45,7 @@ export function debugExecution(ws: ws, filename: string) {
 
   // Launch gdb.
   const gdb = new GdbController();
-  const SANDBOX_PATH = path.join(__dirname, './sandbox/bin/sandbox');
+  const SANDBOX_PATH = 'sandbox';
   const CWD = path.join(__dirname, './sandbox/bin');
 
   function onResponse(res: GdbResponse) {
@@ -65,52 +65,50 @@ export function debugExecution(ws: ws, filename: string) {
     });
   }
 
-  async function onStart() {
-    while (deviceName === '') {
-      await new Promise((r) => setTimeout(r, 100));
-    }
-    stage = 'silent';
-    gdb.launch('gdb', [], {
-      cwd: CWD,
-    });
-    const pausedEvent = new EventEmitter();
-    gdb.onResponse((res) => {
-      if (stage === 'silent') {
-        if (res.type === 'notify' && res.message === 'stopped') {
-          pausedEvent.emit('paused', res);
-        }
-        if (res.type === 'result' && res.token === 106) {
-          pausedEvent.emit('ready', res);
-        }
-      }
-      onResponse(res);
-    });
-    gdb.onClose(onClose);
-    gdb.sendRequest('100-gdb-set follow-fork-mode child');
-    gdb.sendRequest('catch exec');
-    gdb.sendRequest(`102-inferior-tty-set ${deviceName.trim()}`);
-    gdb.sendRequest(`103-file-exec-and-symbols "${SANDBOX_PATH}"`);
-    gdb.sendRequest(`104-gdb-set args --debug-mode --exe_path="${filename}"`);
-    await new Promise<void>((resolve) => {
-      pausedEvent.once('paused', () => resolve());
-      gdb.sendRequest('105-exec-run');
-    });
-    await new Promise<void>((resolve) => {
-      pausedEvent.once('ready', () => resolve());
-      gdb.sendRequest(`106-file-exec-and-symbols "${filename}"`);
-    });
-    stage = 'forward';
-    send({
-      type: 'started',
-      sourceFilePath: path.join(path.dirname(filename), path.parse(filename).name + '.cpp')
-    });
+  while (deviceName === '') {
+    await new Promise((r) => setTimeout(r, 100));
   }
+  stage = 'silent';
+  gdb.launch('gdb', [], {
+    cwd: CWD,
+  });
+  const pausedEvent = new EventEmitter();
+  gdb.onResponse((res) => {
+    if (stage === 'silent') {
+      if (res.type === 'notify' && res.message === 'stopped') {
+        pausedEvent.emit('paused', res);
+      }
+      if (res.type === 'result' && res.token === 106) {
+        pausedEvent.emit('ready', res);
+      }
+    }
+    onResponse(res);
+  });
+  gdb.onClose(onClose);
+  gdb.sendRequest('100-gdb-set follow-fork-mode child');
+  gdb.sendRequest('catch exec');
+  gdb.sendRequest(`102-inferior-tty-set ${deviceName.trim()}`);
+  gdb.sendRequest(`103-file-exec-and-symbols "${SANDBOX_PATH}"`);
+  gdb.sendRequest(`104-gdb-set args --debug-mode --exe_path="${filename}"`);
+  await new Promise<void>((resolve) => {
+    pausedEvent.once('paused', () => resolve());
+    gdb.sendRequest('105-exec-run');
+  });
+  await new Promise<void>((resolve) => {
+    pausedEvent.once('ready', () => resolve());
+    gdb.sendRequest(`106-file-exec-and-symbols "${filename}"`);
+  });
+  stage = 'forward';
+  send({
+    type: 'started',
+    sourceFilePath: path.join(path.dirname(filename), path.parse(filename).name + '.cpp')
+  });
 
   ws.on('message', async (req: Buffer) => {
     const reqObj: WsDebugGdbC2S = JSON.parse(req.toString());
     switch (reqObj.type) {
       case 'start': {
-        onStart();
+        // onStart();
         break;
       }
       case 'request': {

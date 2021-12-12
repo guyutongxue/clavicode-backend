@@ -172,7 +172,7 @@ export async function compileHandler(request: CppCompileRequest): Promise<CppCom
       status: 'error',
       errorType: compileResult.errorType,
       error: compileResult.error
-    } as any;
+    } as never;
   }
   switch (request.execute) {
     case 'none': {
