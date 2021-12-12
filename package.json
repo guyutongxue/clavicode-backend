@@ -17,7 +17,7 @@
   "license": "GPL-3.0-or-later",
   "dependencies": {
     "@codingame/monaco-jsonrpc": "^0.3.1",
-    "@gytx/tsgdbmi": "0.4.0",
+    "@gytx/tsgdbmi": "0.5.0",
     "bcrypt": "^5.0.1",
     "cheerio": "^1.0.0-rc.10",
     "colors": "^1.4.0",
@@ -74,8 +74,5 @@
     "webpack-pnp-externals": "^1.1.0",
     "webpack-shell-plugin-next": "^2.2.2"
   },
-  "packageManager": "yarn@3.0.2",
-  "resolutions": {
-    "@gytx/tsgdbmi": "portal:/home/guyutongxue/repos/tsgdbmi"
-  }
+  "packageManager": "yarn@3.0.2"
 }

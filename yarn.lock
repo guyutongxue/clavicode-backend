@@ -84,15 +84,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gytx/tsgdbmi@portal:/home/guyutongxue/repos/tsgdbmi::locator=clavicode-backend%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@gytx/tsgdbmi@portal:/home/guyutongxue/repos/tsgdbmi::locator=clavicode-backend%40workspace%3A."
+"@gytx/tsgdbmi@npm:0.5.0":
+  version: 0.5.0
+  resolution: "@gytx/tsgdbmi@npm:0.5.0"
   dependencies:
     colors: ^1.4.0
     iconv-lite: ^0.6.2
     rxjs: ^7.4.0
+  checksum: 8bf57f09204f4cb44d52add5f60d9114d7ffe06dfc8decaedc9fe8132363a76e9cf86978cbf7e634a91502047e6c8a52726e2d3d45da66d4ef0d95764c0e2580
   languageName: node
-  linkType: soft
+  linkType: hard
 
 "@humanwhocodes/config-array@npm:^0.6.0":
   version: 0.6.0
@@ -1614,7 +1615,7 @@ __metadata:
   resolution: "clavicode-backend@workspace:."
   dependencies:
     "@codingame/monaco-jsonrpc": ^0.3.1
-    "@gytx/tsgdbmi": 0.4.0
+    "@gytx/tsgdbmi": 0.5.0
     "@types/bcrypt": ^5.0.0
     "@types/cookie-parser": ^1.4.2
     "@types/cors": ^2.8.12
