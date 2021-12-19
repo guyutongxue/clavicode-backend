@@ -31,6 +31,12 @@ export interface File {
   createdAt: Date;
 }
 
+export interface VeriCode {
+  email: string;
+  veriCode: string;
+  expire_at?: Date;
+}
+
 const userSchema = new Schema<User>({
   name: { type: String, required: true },
   email: { type: String, required: true },
@@ -48,8 +54,17 @@ const fileSchema = new Schema<File>({
   createdAt: { type: Date, expires: 60 }
 });
 
+
+const veriCodeSchema = new Schema<VeriCode>({
+  email: {type: String, required: true},
+  veriCode: {type: String, required: true},
+  expire_at: {type: Date, default: Date.now, expires: 300}
+});
+
+
 export const UserModel = model<User>('User', userSchema);
 export const FileModel = model<File>('File', fileSchema);
+export const VeriCodeModel = model<VeriCode>('VeriCode', veriCodeSchema);
 
 // run().catch(err=>console.log(err));
 

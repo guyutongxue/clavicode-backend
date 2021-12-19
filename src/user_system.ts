@@ -16,12 +16,15 @@
 // along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import { UserModel, User } from "./db/utils";
+import { UserModel,  VeriCodeModel } from "./db/utils";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import * as path from 'path';
 import { Request, Response } from 'express';
-import { UserRegisterRequest, UserLoginRequest, UserChangePasswordRequest, UserGetInfoResponse, UserChangeUsernameResponse, OjSetCourseResponse } from './api';
+import { UserRegisterRequest, UserLoginRequest, UserChangePasswordRequest, UserGetInfoResponse, UserChangeUsernameResponse, OjSetCourseResponse, UserGetVeriCodeRequest, UserGetVeriCodeResponse, UserVerifyVeriCodeRequest, UserVerifyVeriCodeResponse } from './api';
+import nodemailer from 'nodemailer';
+import smtpTransport from 'nodemailer-smtp-transport';
+
 
 export type UserSysResponse = {
   success: boolean;
@@ -36,13 +39,79 @@ export async function register(body: UserRegisterRequest): Promise<UserSysRespon
   if (await UserModel.findOne({ email: body.email })) {
     return { success: false, message: "Email Address" + body.email + "is already taken" };
   }
+  const regEmail=/^([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+@([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+\.[a-zA-Z]{2,3}$/;
+  if(!regEmail.test(body.email)){
+    return {success: false, message: "the email's format is incorrect"};
+  }
+  const regPass= /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
+  if(!regPass.test(body.password)){
+    return {success: false, message: "fail password requirement: at least one A-Z, one a-z, one 0-9, length >= 8"};
+  }
   const user = new UserModel({
     name: body.username,
     email: body.email,
     password: await bcrypt.hash(body.password, 10),
     authorized: new Map<string, string[]>(),
   });
-  await user.save();
+  return { success: true };
+}
+
+export async function verifyVeriCode(body: UserVerifyVeriCodeRequest): Promise<UserVerifyVeriCodeResponse>{
+  const veriCode = await VeriCodeModel.findOne({email: body.email});
+  if(!veriCode) {
+    return {success: false, reason: "email not found"};
+  }
+  if(veriCode.veriCode === body.veriCode)
+    return {success: true};
+  return {success: false, reason: "wrong veriCode"};
+}
+// send the verification code to the given email addr
+export async function getVeriCode(body: UserGetVeriCodeRequest): Promise<UserGetVeriCodeResponse>{
+  if (!body.email) {
+    return { success: false, reason: 'register form incorrect' };
+  }
+  if (await UserModel.findOne({ email: body.email })) {
+    return { success: false, reason: "Email Address" + body.email + "is already taken" };
+  }
+  const regEmail=/^([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+@([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+\.[a-zA-Z]{2,3}$/;
+  if(!regEmail.test(body.email)){
+    return {success: false, reason: "the email's format is incorrect"};
+  }
+  const transport = nodemailer.createTransport(smtpTransport({
+    host: 'smtp.163.com', // 服务
+    port: 465, // smtp端口
+    secure: true,
+    auth: {
+      user: 'clavicode@163.com', //用户名
+      pass: 'UABGRXMWDPLNMBXW' // SMTP授权码
+    }
+  }));
+
+  const generateVeriCode=()=>{
+    let code = "";
+    for (let i = 0; i < 6; i++){
+      code += Math.floor(Math.random()*10).toString();
+    }
+    return code;
+  };
+
+  const code = generateVeriCode();
+  transport.sendMail({
+    from: 'clavicode@163.com', 
+            to: body.email, 
+            subject: '验证你的电子邮件', // 标题
+            html: `
+            <p>你好！</p>
+            <p>您正在注册clavicode账号</p>
+            <p>你的验证码是：<strong style="color: #ff4e2a;">${code}</strong></p>
+            <p>***该验证码5分钟内有效***</p>` // html 内容
+  },
+  function() {
+    transport.close(); 
+  });
+  VeriCodeModel.deleteMany({email: body.email}); // delete previous record
+  if(!await VeriCodeModel.insertMany({email: body.email, veriCode: code}))
+    return {success: false, reason: "database error"};
   return { success: true };
 }
 

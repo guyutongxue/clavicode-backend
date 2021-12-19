@@ -158,6 +158,13 @@ export type UserRegisterRequest = {
   username: string;
   password: string;
 };
+export type UserGetVeriCodeRequest={
+  email: string;
+};
+export type UserVerifyVeriCodeRequest={
+  email: string;
+  veriCode: string;
+};
 export type UserRegisterResponse = {
   success: true;
 } | {
@@ -196,6 +203,10 @@ export type OjSetCourseResponse = {
 export type UserLoginResponse = UserRegisterResponse;
 
 export type UserLogoutResponse = UserRegisterResponse;
+
+export type UserGetVeriCodeResponse = UserRegisterResponse;
+
+export type UserVerifyVeriCodeResponse = UserRegisterResponse;
 
 export type UserChangePasswordRequest = {
   email: string; 

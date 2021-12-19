@@ -30,7 +30,7 @@ import * as path from 'path';
 import { connectToMongoDB } from './db/utils';
 import { register, login, authenticateToken, updateName, updatePassword, getUsername, getToken, getInfo, setCourse, remove } from './user_system';
 import { languageServerHandler } from './language_server';
-import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, OjSubmitRequest, OjSubmitResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserLogoutResponse, UserRegisterRequest, UserRegisterResponse } from './api';
+import { CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, OjSubmitRequest, OjSubmitResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserGetInfoResponse, UserLoginRequest, UserLoginResponse, UserLogoutResponse, UserRegisterRequest, UserRegisterResponse } from './api';
 import { compileHandler } from './compile_handler';
 import { getHeaderFileHandler } from './get_header_file_handler';
 import { findExecution, interactiveExecution } from './executions/interactive_execution';
@@ -228,8 +228,25 @@ app.get('/user/getInfo', async (req, res) => {
   }
 });
 
-app.post('/user/authorize', async (req, res) => {
+app.post('/user/getVeriCode', async (req, res) =>{
+  try {
+    const request: UserGetVeriCodeRequest = req.body;
+    const response = await register(request);
+    if (response.success) {
+      res.cookie('token', response.token, { httpOnly: true });
+      res.json(<UserLoginResponse>{ success: true });
+    } else {
+      res.json(<UserLoginResponse>{ success: false, reason: response.message });
+    }
+  } catch (e) {
+    res.json(<UserRegisterResponse>{
+      success: false,
+      reason: e
+    });
+  }
+});
 
+app.post('/user/authorize', async (req, res) => {
 })
 
 app.get('/user/getToken', async (req, res) => {
