@@ -143,6 +143,7 @@ export async function updateName(email: string, username: string): Promise<UserC
   return { success: false, reason: "user not found" };
 }
 
+/** @deprecated use getInfo instead */
 export async function getUsername(email: string): Promise<string> {
   const user = await UserModel.findOne({ email });
   if (user) {

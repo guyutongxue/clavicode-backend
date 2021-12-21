@@ -373,6 +373,46 @@ type OjSubmitResponse = {
 };
 ```
 
+### 验证码
+
+获取验证码
+
+POST $PREFIX/user/getVeriCode
+
+```typescript
+type UserGetVeriCodeRequest={
+  email: string;
+};
+
+type UserGetVeriCodeResponse = {
+  success: true;
+  // title: string;
+} | {
+  success: false;
+  reason: string;
+};
+```
+
+验证验证码
+
+POST $PREFIX/user/veriVeriCode
+
+```typescript
+type UserVerifyVeriCodeRequest={
+  email: string;
+  veriCode: string;
+};
+
+type UserVerifyVeriCodeResponse = {
+  success: true;
+  // title: string;
+} | {
+  success: false;
+  reason: string;
+};
+```
+
+
 ### 查看提交结果
 
 ```
@@ -506,44 +546,5 @@ type OjSetTypeRequest = {
 };
 type OjSetTypeResponse = {
   success: boolean;
-};
-```
-
-### 验证码
-
-获取验证码
-
-POST $PREFIX/user/getVeriCode
-
-```typescript
-type UserGetVeriCodeRequest={
-  email: string;
-};
-
-type UserGetVeriCodeResponse = {
-  success: true;
-  // title: string;
-} | {
-  success: false;
-  reason: string;
-};
-```
-
-验证验证码
-
-POST $PREFIX/user/veriVeriCode
-
-```typescript
-type UserVerifyVeriCodeRequest={
-  email: string;
-  veriCode: string;
-};
-
-type UserVerifyVeriCodeResponse = {
-  success: true;
-  // title: string;
-} | {
-  success: false;
-  reason: string;
 };
 ```
