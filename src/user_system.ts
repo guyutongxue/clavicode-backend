@@ -37,7 +37,7 @@ export async function register(body: UserRegisterRequest): Promise<UserSysRespon
     return { success: false, message: 'register form incorrect' };
   }
   if (await UserModel.findOne({ email: body.email })) {
-    return { success: false, message: "Email Address" + body.email + "is already taken" };
+    return { success: false, message: "Email Address " + body.email + " is already taken" };
   }
   const regEmail=/^([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+@([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+\.[a-zA-Z]{2,3}$/;
   if(!regEmail.test(body.email)){
@@ -65,13 +65,15 @@ export async function verifyVeriCode(body: UserVerifyVeriCodeRequest): Promise<U
     return {success: true};
   return {success: false, reason: "wrong veriCode"};
 }
+
+
 // send the verification code to the given email addr
 export async function getVeriCode(body: UserGetVeriCodeRequest): Promise<UserGetVeriCodeResponse>{
   if (!body.email) {
     return { success: false, reason: 'register form incorrect' };
   }
   if (await UserModel.findOne({ email: body.email })) {
-    return { success: false, reason: "Email Address" + body.email + "is already taken" };
+    return { success: false, reason: "Email Address " + body.email + " is already taken" };
   }
   const regEmail=/^([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+@([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+\.[a-zA-Z]{2,3}$/;
   if(!regEmail.test(body.email)){
