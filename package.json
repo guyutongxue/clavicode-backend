@@ -1,12 +1,12 @@
 {
   "name": "clavicode-backend",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "",
   "main": "build/index.js",
   "scripts": {
     "start:dev": "NODE_ENV=development webpack",
     "run:dev": "NODE_ENV=development nodemon build/index.js",
-    "run:prod": "nodemon dist/index.js",
+    "run:prod": "node dist/index.js",
     "build:sandbox": "cd src/sandbox && mkdir -p build && cd build && cmake .. && make",
     "build:utils": "cd src/utils && make",
     "build": "yarn build:sandbox && yarn build:utils && webpack",
