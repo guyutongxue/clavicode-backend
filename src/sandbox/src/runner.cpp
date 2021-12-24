@@ -148,8 +148,9 @@ SandboxResult run(const SandboxConfig& config) {
     int retval;
     rusage resource_usage;
 
+    std::thread read_stdout, read_stderr;
     if (!config.debug_mode) {
-      std::thread read_stdout([&]() {
+      read_stdout = std::thread([&]() {
         int size;
         char buf[256];
         while ((size = read(stdout_pipe[0], buf, sizeof(buf)))) {
@@ -164,8 +165,7 @@ SandboxResult run(const SandboxConfig& config) {
         }
         close(stdout_pipe[0]);
       });
-      read_stdout.join();
-      std::thread read_stderr([&]() {
+      read_stderr = std::thread([&]() {
         char size;
         char buf[256];
         while ((size = read(stderr_pipe[0], buf, sizeof(buf)))) {
@@ -180,7 +180,6 @@ SandboxResult run(const SandboxConfig& config) {
         }
         close(stderr_pipe[0]);
       });
-      read_stderr.join();
     }
 
     const int WAIT_OPT = config.debug_mode ? WSTOPPED : WNOHANG | WSTOPPED;
@@ -209,6 +208,8 @@ SandboxResult run(const SandboxConfig& config) {
         }
       }
     }
+    if (read_stdout.joinable()) read_stdout.join();
+    if (read_stderr.joinable()) read_stderr.join();
 
     gettimeofday(&end, nullptr);
 
