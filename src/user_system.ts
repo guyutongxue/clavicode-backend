@@ -45,7 +45,7 @@ export async function register(body: UserRegisterRequest): Promise<UserSysRespon
   }
   const regPass= /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
   if(!regPass.test(body.password)){
-    return {success: false, message: "fail password requirement: at least one A-Z, one a-z, one 0-9, length >= 8"};
+    return {success: false, message: "fail password requirement: at least one A-Z, one a-z, one 0-9, one special character(#?!@$%^&*-), length >= 8"};
   }
   const user = new UserModel({
     name: body.username,
