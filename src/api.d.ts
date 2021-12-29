@@ -309,30 +309,3 @@ export type OjSetTypeRequest = {
 export type OjSetTypeResponse = {
   success: boolean;
 };
-export type WsDebugGdbC2S = {
-  type: 'start';
-} | {
-  type: 'request';
-  request: string;
-} | {
-  type: 'tin';
-  content: string;
-} | {
-  type: 'shutdown';
-};
-export type WsDebugGdbS2C = {
-  type: 'started';
-  sourceFilePath: string;
-} | {
-  type: 'closed';
-  exitCode: number;
-} | {
-  type: 'error';
-  reason: RuntimeError;
-} | {
-  type: 'response';
-  response: GdbResponse;
-} | {
-  type: 'tout';
-  content: string;
-};
