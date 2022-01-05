@@ -31,8 +31,8 @@ const CONFIG: Record<string, {
     args: [ '--query-driver=/usr/bin/g++-11' ]
   },
   'python': {
-    path: path.join(__dirname, './utils/scripts/python_lsp.py'),
-    args: []
+    path: 'pyright-langserver',
+    args: [ '--stdio' ]
   }
 };
 

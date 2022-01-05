@@ -35,8 +35,7 @@ ENV PATH      $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
 # Fetch and build frontend
 RUN git clone https://github.com/Guyutongxue/clavicode-frontend.git /var/frontend \
   && cd /var/frontend \
-  && npm install -g @angular/cli \
-  && npm install -g yarn \
+  && npm install -g @angular/cli yarn pyright \
   && npm install \
   && ng build 
 
