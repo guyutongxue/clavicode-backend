@@ -105,22 +105,6 @@ type CppCompileResponse = {
 
 前端获取到 `debugToken` 后，将其作为 `$DEBUG_TOKEN` 以进行 WebSocket 交互。
 
-### Clangd 语言服务请求
-
-```
-POST $PREFIX/cpp/lsp
-```
-
-#### 格式
-
-```ts
-type CppLspRequest = {}
-type CppLspResponse = {
-  success: boolean;
-  token?: string;      // If success is true
-// expireDate?: string; // If success is true
-}
-```
 
 ### 获取头文件内容
 
@@ -201,10 +185,16 @@ type WsExecuteS2C = {
 ### Clangd 语言服务器
 
 ```
-ws://$PREFIX/ws/languageServer/clangd/$TOKEN
+ws://$PREFIX/ws/languageServer/cpp
 ```
 
-与 Clangd 语言服务器交互，需传入 `$TOKEN` 以进行身份验证。交互格式由 LSP 规范规定。
+与 Clangd 语言服务器通信。交互格式由 LSP 规范规定。
+
+```
+ws://$PREFIX/ws/languageServer/python
+```
+
+与 Python 语言服务器通信。交互格式由 LSP 规范规定。
 
 ### GDB 调试
 

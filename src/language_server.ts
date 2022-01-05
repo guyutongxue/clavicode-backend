@@ -20,11 +20,21 @@ import * as server from "@codingame/monaco-jsonrpc/lib/server";
 import * as lsp from "vscode-languageserver";
 import ws from "ws";
 import * as cp from "child_process";
+import * as path from 'path';
 
-const EXEC_PATH = "clangd-12";
-const ARGS = [
-  "--query-driver=/usr/bin/g++-11"
-];
+const CONFIG: Record<string, {
+  path: string,
+  args: string[]
+}> = {
+  'cpp': {
+    path: 'clangd-12',
+    args: [ '--query-driver=/usr/bin/g++-11' ]
+  },
+  'python': {
+    path: path.join(__dirname, './utils/scripts/python_lsp.py'),
+    args: []
+  }
+};
 
 // https://github.com/CodinGame/monaco-jsonrpc/blob/master/src/server/launch.ts
 // Modified, make stderr silent.
@@ -45,7 +55,7 @@ function launch(socket: rpc.IWebSocket, serverPath: string, env: NodeJS.ProcessE
   const reader = new rpc.WebSocketMessageReader(socket);
   const writer = new rpc.WebSocketMessageWriter(socket);
   const socketConnection = server.createConnection(reader, writer, () => socket.dispose());
-  const serverConnection = createServerProcess('C++', serverPath, args, {
+  const serverConnection = createServerProcess('', serverPath, args, {
     env,
   });
   server.forward(socketConnection, serverConnection, message => {
@@ -59,7 +69,7 @@ function launch(socket: rpc.IWebSocket, serverPath: string, env: NodeJS.ProcessE
   });
 }
 
-export function languageServerHandler(ws: ws) {
+export function languageServerHandler(ws: ws, language: string) {
   const socket: rpc.IWebSocket = {
     send: (data) => ws.send(data, (err) => {
       if (err) throw err;
@@ -69,9 +79,11 @@ export function languageServerHandler(ws: ws) {
     onClose: (callback) => ws.on('close', callback),
     dispose: () => ws.close()
   };
+  const PATH = CONFIG[language].path;
+  const ARGS = CONFIG[language].args;
   if (ws.readyState === ws.OPEN) {
-    launch(socket, EXEC_PATH, { PATH: process.env.PATH }, ARGS);
+    launch(socket, PATH, { PATH: process.env.PATH }, ARGS);
   } else {
-    ws.on('open', () => launch(socket, EXEC_PATH, { PATH: process.env.PATH }, ARGS));
+    ws.on('open', () => launch(socket, PATH, { PATH: process.env.PATH }, ARGS));
   }
 }

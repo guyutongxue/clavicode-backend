@@ -28,9 +28,9 @@ import * as tmp from 'tmp';
 import * as path from 'path';
 
 import { connectToMongoDB } from './db/utils';
-import { verifyVeriCode, register, login, authenticateToken, updateName, updatePassword, getUsername, getToken, getInfo, setCourse, remove, getVeriCode } from './user_system';
+import { verifyVeriCode, register, login, authenticateToken, updateName, updatePassword,  getToken, getInfo, setCourse, remove, getVeriCode } from './user_system';
 import { languageServerHandler } from './language_server';
-import { UserVerifyVeriCodeResponse, UserVerifyVeriCodeRequest, UserGetVeriCodeResponse, CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, OjSubmitRequest, OjSubmitResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserGetInfoResponse, UserLoginRequest, UserLoginResponse, UserLogoutResponse, UserRegisterRequest, UserRegisterResponse, UserGetVeriCodeRequest } from './api';
+import { UserVerifyVeriCodeResponse, UserVerifyVeriCodeRequest, UserGetVeriCodeResponse, CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, OjSubmitRequest, OjSubmitResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserLogoutResponse, UserRegisterRequest, UserRegisterResponse, UserGetVeriCodeRequest } from './api';
 import { compileHandler } from './compile_handler';
 import { getHeaderFileHandler } from './get_header_file_handler';
 import { findExecution, interactiveExecution } from './executions/interactive_execution';
@@ -91,8 +91,8 @@ app.ws('/ws/debug/gdb/:token', async function (ws, req) {
   }
 });
 
-app.ws('/ws/languageServer/cpp', function (ws, req) {
-  languageServerHandler(ws);
+app.ws('/ws/languageServer/:lang', function (ws, req) {
+  languageServerHandler(ws, req.params.lang);
   setTimeout(() => ws.close(), 5 * 60 * 1000);
 });
 
@@ -189,15 +189,6 @@ app.get('/user/logout', async (req, res) => {
       success: false,
       reason: e
     });
-  }
-});
-
-app.get('/user/username', async (req, res) => {
-  const email = await authenticateToken(req);
-  if (email) {
-    res.json({ success: true, username: await getUsername(email) });
-  } else {
-    res.json({ success: false, reason: "not found" });
   }
 });
 
