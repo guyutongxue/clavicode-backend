@@ -70,8 +70,7 @@ ErrorType c_cpp_seccomp_rules(const SandboxConfig& config) {
       SCMP_SYS(gettid)};
 
   int debug_whitelist[]{SCMP_SYS(set_tid_address), SCMP_SYS(set_robust_list),
-                        SCMP_SYS(uname),           SCMP_SYS(prlimit64),
-                        SCMP_SYS(readlink),        SCMP_SYS(getrandom),
+                        SCMP_SYS(prlimit64), SCMP_SYS(getrandom),
                         SCMP_SYS(newfstatat)};
 
   scmp_filter_ctx ctx{seccomp_init(SCMP_ACT_KILL)};
@@ -235,8 +234,9 @@ ErrorType c_cpp_seccomp_rules(const SandboxConfig& config) {
   if (c_cpp_seccomp_rules(config) != ErrorType::SUCCESS) {
     child_error_exit(ErrorType::LOAD_SECCOMP_FAILED);
   }
-  BOOST_LOG_TRIVIAL(info) << "load seccomp rules finish";
-  // static_cast<void>(c_cpp_seccomp_rules);
+  // We have set seccomp now, but Boost.Log calls gettimeofday(). 
+  // So DO NOT log anything from this point.
+  // BOOST_LOG_TRIVIAL(info) << "load seccomp rules finish";
 
   char* argv[256]{};
   char* envp[256]{};
