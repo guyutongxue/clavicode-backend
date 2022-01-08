@@ -28,7 +28,7 @@ import * as tmp from 'tmp';
 import * as path from 'path';
 
 import { connectToMongoDB } from './db/utils';
-import { verifyVeriCode, register, login, authenticateToken, updateName, updatePassword,  getToken, getInfo, setCourse, remove, getVeriCode } from './user_system';
+import { verifyVeriCode, register, login, authenticateToken, updateName, updatePassword, getToken, getInfo, setCourse, remove, getVeriCode } from './user_system';
 import { languageServerHandler } from './language_server';
 import { UserVerifyVeriCodeResponse, UserVerifyVeriCodeRequest, UserGetVeriCodeResponse, CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, OjSubmitRequest, OjSubmitResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserLogoutResponse, UserRegisterRequest, UserRegisterResponse, UserGetVeriCodeRequest } from './api';
 import { compileHandler } from './compile_handler';
@@ -60,13 +60,18 @@ if (process.env.PRODUCTION) {
   expressWs(app, server);
 }
 
-app.use(express.static('static'));
 app.use(cors({
   origin: [/localhost(:\d+)?$/, /guoyi.work$/],
   credentials: true
 }));
+app.use(function (req, res, next) {
+  res.header("Cross-Origin-Opener-Policy", "same-origin");
+  res.header("Cross-Origin-Embedder-Policy", "require-corp");
+  next();
+});
 app.use(express.json());
 app.use(cookieParser());
+app.use(express.static('static'));
 
 // connect to the mongodb server; this is a async function should be awaited..
 connectToMongoDB();
@@ -219,7 +224,7 @@ app.get('/user/getInfo', async (req, res) => {
   }
 });
 
-app.post('/user/getVeriCode', async (req, res) =>{
+app.post('/user/getVeriCode', async (req, res) => {
   try {
     const request: UserGetVeriCodeRequest = req.body;
     const response = await getVeriCode(request);
@@ -232,7 +237,7 @@ app.post('/user/getVeriCode', async (req, res) =>{
   }
 });
 
-app.post('/user/veriVeriCode', async (req, res) =>{
+app.post('/user/veriVeriCode', async (req, res) => {
   try {
     const request: UserVerifyVeriCodeRequest = req.body;
     const response = await verifyVeriCode(request);
