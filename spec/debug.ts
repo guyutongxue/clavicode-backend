@@ -19,7 +19,6 @@ import { debugExecution } from "../src/debug";
 import ws from "ws";
 import * as path from 'path';
 import EventEmitter from "events";
-import 'colors';
 import { WsDebugGdbC2S, WsDebugGdbS2C } from "../src/api";
 
 const event = new EventEmitter();
@@ -38,7 +37,7 @@ class WsTest extends EventEmitter {
         event.emit('stop1', res);
       }
     } else if (res.type === 'tout') {
-      console.log(res.content.italic);
+      console.log(res.content);
     }
   }
 }
