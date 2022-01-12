@@ -44,7 +44,9 @@ export function interactiveExecution(ws: ws, filename: string) {
     if (ptyProcess !== null) {
       ptyProcess.kill();
     }
-    fs.unlinkSync(filename);
+    if (fs.existsSync(filename)) {
+      fs.unlinkSync(filename);
+    }
     ws.close();
     console.log("closed");
   }
@@ -77,10 +79,23 @@ export function interactiveExecution(ws: ws, filename: string) {
           console.log('交互式运行时，沙箱未正常退出');
           return;
         }
-        const str = fs.readFileSync(tmpResultFile.name, 'utf-8');
-        console.log("result: ", str);
-        const result: SandboxResult = JSON.parse(str);
-        tmpResultFile.removeCallback();
+        let result: SandboxResult = {
+          success: true,
+          cpu_time: -1,
+          real_time: -1,
+          result: 4,
+          memory: -1,
+          signal: 2, // SIGINT
+          exit_code: 127
+        };
+        try {
+          const str = fs.readFileSync(tmpResultFile.name, 'utf-8');
+          console.log("result: ", str);
+          result = JSON.parse(str);
+          tmpResultFile.removeCallback();
+        } catch {
+          // do nothing
+        }
         if (result.exit_code !== 0) {
           send({ type: 'error', reason: 'system' });
           return;
