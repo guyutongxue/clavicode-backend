@@ -31,8 +31,8 @@ const CONFIG: Record<string, {
     args: [ '--query-driver=/usr/bin/g++-11' ]
   },
   'python': {
-    path: 'pyright-langserver',
-    args: [ '--stdio' ]
+    path: path.join(__dirname, '../scripts/start_pyright.sh'),
+    args: []
   }
 };
 

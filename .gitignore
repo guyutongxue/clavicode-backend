@@ -15,3 +15,6 @@ dist/*
 /static/**
 node_modules
 .env
+
+# Python virtual env
+pyvenv/
