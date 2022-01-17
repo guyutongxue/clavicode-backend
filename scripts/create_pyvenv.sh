@@ -1,4 +1,4 @@
-sudo apt install python3.8-venv
+sudo apt install -y python3.8-venv
 python -m venv pyvenv
 source pyvenv/bin/activate
 # https://pyodide.org/en/stable/usage/packages-in-pyodide.html
