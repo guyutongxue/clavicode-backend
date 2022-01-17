@@ -6,7 +6,7 @@ You should use GNU/Linux. All our development and deployment are done with Ubunt
 
 ### Preparation
 
-Install C++/Python environment: `gcc-11` `g++-11` `gdb` `clangd-12` `python-is-python3`.
+Install C++/Python environment: `gcc-11` `g++-11` `gdb` `clangd-12` `python-is-python3`. Install `pyright` globally later with `npm`.
 
 Install tools and libraries for building C++ sources: `cmake` `libseccomp-dev` `libboost-all-dev`.
 
