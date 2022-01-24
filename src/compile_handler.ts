@@ -71,6 +71,7 @@ function execCompiler(srcPath: string, noLink: boolean, debugInfo: boolean): Pro
     outputFileName = changeExt(srcPath, '.o');
     args = [
       //...store.get('build.compileArgs').map(parseDynamic),
+      '--std=c++20',
       ...(debugInfo ? ['-g'] : []),
       '-c',
       srcPath,

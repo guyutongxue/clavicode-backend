@@ -28,7 +28,10 @@ const CONFIG: Record<string, {
 }> = {
   'cpp': {
     path: 'clangd-12',
-    args: [ '--query-driver=/usr/bin/g++-11' ]
+    args: [
+      '--query-driver=/usr/bin/g++-11',
+      `--compile-commands-dir=${path.join(__dirname, '../cppenv')}`
+    ]
   },
   'python': {
     path: path.join(__dirname, '../scripts/start_pyright.sh'),
