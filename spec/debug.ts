@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
 
-import { debugExecution } from "../src/debug";
+import { debugExecution } from "../src/cpp/debug";
 import ws from "ws";
 import * as path from 'path';
 import EventEmitter from "events";

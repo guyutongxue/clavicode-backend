@@ -21,7 +21,7 @@ import * as pty from "node-pty";
 import { query } from '../db/file';
 import * as tmp from 'tmp';
 import * as fs from 'fs';
-import { SandboxResult } from './file_execution';
+import { SandboxResult } from './file';
 import { constants } from 'os';
 
 export function findExecution(id: string): Promise<string | null> {

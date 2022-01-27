@@ -1,4 +1,4 @@
-import { compileHandler } from "../src/compile_handler";
+import { compileHandler } from "../src/cpp/compile";
 
 const TEST_SOURCES: {
   title: string;
