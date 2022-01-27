@@ -43,16 +43,20 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 const app: expressWs.Application = express() as any;
 const {
   PORT = "3000",
-} = process.env;   //默认端口为3000
+} = process.env;
 
 if (process.env.PRODUCTION) {
   const cert = fs.readFileSync(path.join(__dirname, '../cert/clavi.cool.pem'), 'utf-8');
   const key = fs.readFileSync(path.join(__dirname, '../cert/clavi.cool.key'), 'utf-8');
 
-  const server = https.createServer({ key, cert }, app).listen(PORT, () => {
-    console.log('server started at https://localhost:' + PORT);
-  });
+  const server = https.createServer({ key, cert }, app).listen(PORT);
   expressWs(app, server);
+  
+  // Redirect http on 80 port to https
+  http.createServer(function (req, res) {
+    res.writeHead(301, { "Location": "https://" + req.headers['host'] + req.url });
+    res.end();
+  }).listen(80);
 } else {
   const server = http.createServer(app).listen(PORT, () => {
     console.log('server started at http://localhost:' + PORT);
