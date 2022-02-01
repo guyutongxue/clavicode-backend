@@ -30,7 +30,7 @@ const CONFIG: Record<string, {
     path: 'clangd-12',
     args: [
       '--query-driver=/usr/bin/g++-11',
-      `--compile-commands-dir=${path.join(__dirname, '../cppenv')}`
+      `--compile-commands-dir=${path.join(__dirname, '../../cppenv')}`
     ]
   },
   'python': {
