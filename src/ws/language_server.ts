@@ -34,7 +34,7 @@ const CONFIG: Record<string, {
     ]
   },
   'python': {
-    path: path.join(__dirname, '../scripts/start_pyright.sh'),
+    path: path.join(__dirname, '../../scripts/start_pyright.sh'),
     args: []
   }
 };
