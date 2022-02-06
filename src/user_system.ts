@@ -16,17 +16,19 @@
 // along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import { UserModel,  VeriCodeModel, status_t } from "./db/utils";
+import { UserModel, VeriCodeModel } from "./db/utils";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { Request } from 'express';
-import { UserUpdateNameRequest, UserRegisterRequest, UserLoginRequest, UserChangePasswordRequest, UserGetInfoResponse, UserChangeUsernameResponse, OjSetCourseResponse, UserGetVeriCodeRequest, UserGetVeriCodeResponse } from './api';
+import { UserUpdateNameRequest, UserRegisterRequest, UserLoginRequest, UserChangePasswordRequest, UserGetInfoResponse, UserChangeUsernameResponse, OjSetCourseResponse, UserGetVeriCodeResponse } from './api';
 import nodemailer from 'nodemailer';
 import smtpTransport from 'nodemailer-smtp-transport';
 
-const regEmail=/^([a-zA-Z0-9]+[_|-|.]?)*[a-zA-Z0-9]+@pku.edu.cn$/;
+const regEmail = /^([a-zA-Z0-9_\-.]+)@([a-zA-Z0-9_\-.]+)([a-zA-Z]+)$/;
+
+const pkuEmail = /^([a-zA-Z0-9]+[_|-|.]?)*[a-zA-Z0-9]+@(stu\.)?pku\.edu\.cn$/;
 // one a-z one 0-9 length >= 6
-const regPassword= /^(?=.*?[a-z])(?=.*?[0-9]).{6,}$/;
+const regPassword = /^(?=.*?[a-z])(?=.*?[0-9]).{6,}$/;
 
 export type UserSysResponse = {
   success: boolean;
@@ -38,62 +40,66 @@ export async function register(body: UserRegisterRequest): Promise<UserSysRespon
   if (!body.password || !body.username || !body.nickname) {
     return { success: false, message: 'register form incorrect' };
   }
-  if(await UserModel.findOne({username: body.username})){
-    return {success: false, message: "username is taken."};
+  if (await UserModel.findOne({ username: body.username })) {
+    return { success: false, message: "username is taken." };
   }
-  if(!regPassword.test(body.password)){
-    return {success: false, message: "fail password requirement: at least one a-z one 0-9 length >= 6"};
+  if (!regPassword.test(body.password)) {
+    return { success: false, message: "fail password requirement: at least one a-z one 0-9 length >= 6" };
   }
-  
+
   const user = new UserModel({
-    nickname:body.nickname,
+    nickname: body.nickname,
     username: body.username,
     password: await bcrypt.hash(body.password, 10),
-    status: status_t.UNREGISTERED,
+    isVIP: false,
     authorized: new Map<string, string[]>(),
   });
   await user.save();
   return { success: true };
 }
 
-export async function verifyVeriCode(token: string): Promise<UserSysResponse>{
-  try{
-    interface TokenIF{
+export async function verifyVeriCode(token: string): Promise<UserSysResponse> {
+  try {
+    interface TokenIF {
       username: string;
       email: string;
     }
     const decoded_token = jwt.verify(token, process.env.JWT_SECRET as string) as TokenIF;
-    const veriCode = await VeriCodeModel.findOne({email: decoded_token.email});
-    if(veriCode) {
-      const user = await UserModel.findOne({username: decoded_token.username});
-      if(user){
+    console.log(decoded_token); 
+    const veriCode = await VeriCodeModel.findOne({ email: decoded_token.email });
+    if (veriCode) {
+      const user = await UserModel.findOne({ username: decoded_token.username });
+      if (user) {
         user.email = veriCode.email;
-        user.status = status_t.UNVERIFIED;
+        if (pkuEmail.test(veriCode.email)) {
+          user.isVIP = true;
+          user.markModified("isVIP");
+        }
         user.markModified("email");
-        user.markModified("status");
-        VeriCodeModel.deleteMany({email: decoded_token.email});
-        return {success: true};
+        user.save();
+        VeriCodeModel.deleteMany({ email: decoded_token.email });
+        return { success: true };
       }
-      else return {success: false, message: "token err"};
+      else return { success: false, message: "token err" };
     }
-    return {success: false, message: "email not found"};
-    
-  }catch(e){
-    return {success: false, message: "token err"};
+    return { success: false, message: "email not found" };
+
+  } catch (e) {
+    return { success: false, message: "token err" };
   }
 }
 
 
 // send the verification code to the given email addr
-export async function getVeriCode(body: UserGetVeriCodeRequest): Promise<UserGetVeriCodeResponse>{
-  if (!body.email) {
+export async function getVeriCode(username: string, email: string): Promise<UserGetVeriCodeResponse> {
+  if (!email) {
     return { success: false, reason: 'register form incorrect' };
   }
-  if (await UserModel.findOne({ email: body.email })) {
-    return { success: false, reason: "The email is already taken."};
+  if (await UserModel.findOne({ email: email })) {
+    return { success: false, reason: "The email is already taken." };
   }
-  if(!regEmail.test(body.email)){
-    return {success: false, reason: "Email format error: require the pku email."};
+  if (!regEmail.test(email)) {
+    return { success: false, reason: "Email format error" };
   }
   const transport = nodemailer.createTransport(smtpTransport({
     host: 'smtp.163.com', // 服务
@@ -114,23 +120,24 @@ export async function getVeriCode(body: UserGetVeriCodeRequest): Promise<UserGet
   // };
 
   // const code = generateVeriCode();
-  const jwtToken = jwt.sign({email: body.email, username: body.username}, process.env.JWT_SECRET as string, { expiresIn: '1h' });
-  transport.sendMail({
-    from: 'clavicode@163.com', 
-            to: body.email, 
-            subject: 'ClaviCode: verify your email', // 标题
-            html: `
+  const jwtToken = jwt.sign({ email: email, username: username }, process.env.JWT_SECRET as string, { expiresIn: '1h' });
+  const err = await new Promise<Error | null>((resolve) => {
+    transport.sendMail({
+      from: 'clavicode@163.com',
+      to: email,
+      subject: 'ClaviCode: verify your email', // 标题
+      html: `
             <p>Welcome to the clavicode community!</p>
             <p>This is the verification email.</p>
-            <a href="https://clavi.cool/user/verify/${jwtToken}"> Click here to verify your email.</a>
+            <a href="https://localhost:3000/user/verify/${jwtToken}"> Click here to verify your email.</a>
             <p>***Please verify in five minutes.***</p>` // html 内容
-  },
-  function() {
-    transport.close(); 
+    }, resolve);
   });
-  VeriCodeModel.deleteMany({email: body.email}); // delete previous record
-  if(!await VeriCodeModel.insertMany({email: body.email}))
-    return {success: false, reason: "database error"};
+  if(err !== null)
+    return { success: false, reason: 'send email error'};
+  VeriCodeModel.deleteMany({ email: email }); // delete previous record
+  if (!await VeriCodeModel.insertMany({ email: email }))
+    return { success: false, reason: "database error" };
   return { success: true };
 }
 
@@ -138,8 +145,8 @@ export async function updatePassword(body: UserChangePasswordRequest): Promise<U
   const user = await UserModel.findOne({ username: body.username });
   if (user) {
     if (bcrypt.compareSync(body.oldPassword, user.password)) {
-      if(!regPassword.test(body.newPassword)){
-        return {success: false, message: "Email format error: require the pku email."};
+      if (!regPassword.test(body.newPassword)) {
+        return { success: false, message: "Email format error: require the pku email." };
       }
       user.password = bcrypt.hashSync(body.newPassword, 10);
       user.markModified('password');
@@ -183,8 +190,8 @@ export async function getToken(username: string): Promise<UserSysResponse> {
 export async function logout(username: string): Promise<UserSysResponse> {
   const user = await UserModel.findOne({ username: username });
   if (!user)
-    return {success: false};
-  return {success: true};
+    return { success: false };
+  return { success: true };
 }
 
 export async function remove(email: string): Promise<boolean> {
@@ -215,7 +222,7 @@ export async function authenticateToken(req: Request): Promise<string | null> {
 export async function getInfo(username: string): Promise<UserGetInfoResponse> {
   const user = await UserModel.findOne({ username: username });
   if (user) {
-    return { success: true, nickname: user.nickname, email: user.email, username: user.username, status: user.status, authorized: user.authorized };
+    return { success: true, nickname: user.nickname, email: user.email, username: user.username, isVIP: user.isVIP, authorized: user.authorized };
   }
   return { success: false };
 }

@@ -159,7 +159,6 @@ export type UserRegisterRequest = {
   password: string;
 };
 export type UserGetVeriCodeRequest={
-  username: string;
   email: string;
 };
 export type UserRegisterResponse = {
@@ -179,7 +178,7 @@ export type UserGetInfoResponse = {
   nickname: string,
   username: string;
   email: string | undefined,
-  status: string,
+  isVIP: boolean,
   authorized: Map<string, string[]> | undefined;
 } | {
   success: false;

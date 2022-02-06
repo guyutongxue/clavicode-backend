@@ -17,17 +17,12 @@
 
 // the mongodb connection
 import { Schema, model, connect } from "mongoose";
-export enum status_t{
-  UNREGISTERED = "UNREGISTERED",
-  UNVERIFIED = "UNVERIFIED",
-  VERIFIED = "VERIFIED",
-}
 export interface User {
   nickname: string;
   username: string;
   password: string;
-  status: string;
   email?: string;
+  isVIP: boolean;
   authorized?: Map<string, string[]>;
 }
 
@@ -47,8 +42,8 @@ const userSchema = new Schema<User>({
   nickname: { type: String, required: true },
   username: {type: String, required: true},
   password: { type: String, required: true },
-  status: {type: String, enum: status_t, default: status_t.UNREGISTERED},
   email: { type: String, default: "" },
+  isVIP: { type: Boolean, default: false},
   authorized: {
     type: Map, 
     of: [String], 

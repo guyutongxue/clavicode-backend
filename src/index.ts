@@ -30,7 +30,7 @@ import * as path from 'path';
 
 import { connectToMongoDB } from './db/utils';
 import { verifyVeriCode, register, login, authenticateToken, updateName, updatePassword, getToken, getInfo, remove, getVeriCode } from './user_system';
-import { UserVerifyVeriCodeResponse, UserGetVeriCodeResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserLogoutResponse, UserRegisterRequest, UserRegisterResponse, UserGetVeriCodeRequest } from './api';
+import { UserGetVeriCodeResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserLogoutResponse, UserRegisterRequest, UserRegisterResponse, UserGetVeriCodeRequest } from './api';
 import { handleOj } from './oj';
 import { handleWs } from './ws';
 import { handleCpp } from './cpp';
@@ -49,7 +49,7 @@ if (process.env.PRODUCTION) {
 
   const server = https.createServer({ key, cert }, app).listen(PORT);
   expressWs(app, server);
-  
+
   // Redirect http on 80 port to https
   http.createServer(function (req, res) {
     res.writeHead(301, { "Location": "https://" + req.headers['host'] + req.url });
@@ -180,8 +180,10 @@ app.get('/user/getInfo', async (req, res) => {
 
 app.post('/user/getVeriCode', async (req, res) => {
   try {
-    const request: UserGetVeriCodeRequest = req.body;
-    const response = await getVeriCode(request);
+    const username = await authenticateToken(req) as string;
+    const email = req.body.email;
+    console.log("username: ", username);
+    const response = await getVeriCode(username, email);
     res.json(response);
   } catch (e) {
     res.json(<UserGetVeriCodeResponse>{
@@ -195,8 +197,8 @@ app.get('/user/verify/:token', async (req, res) => {
   const { token } = req.params;
   const response = await verifyVeriCode(token);
   if (response.success)
-    res.json({ success: true });
-  else res.json({ success: false, reason: response.message });
+    res.status(200).send('Email verified!');
+  else res.status(200).send('Email verify failed, please try again.');
 });
 
 
