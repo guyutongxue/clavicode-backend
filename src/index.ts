@@ -29,22 +29,11 @@ import * as tmp from 'tmp';
 import * as path from 'path';
 
 import { connectToMongoDB } from './db/utils';
-<<<<<<< HEAD
-import { verifyVeriCode, register, login, authenticateToken, updateName, updatePassword, getToken, getInfo, setCourse, remove, getVeriCode } from './user_system';
-import { languageServerHandler } from './language_server';
-import { UserGetVeriCodeResponse, CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, OjSubmitRequest, OjSubmitResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserLogoutResponse, UserRegisterRequest, UserRegisterResponse, UserGetVeriCodeRequest } from './api';
-import { compileHandler } from './compile_handler';
-import { getHeaderFileHandler } from './get_header_file_handler';
-import { findExecution, interactiveExecution } from './executions/interactive_execution';
-import { getProblem, getSolution, listProblems, listProblemSets, submitCode } from './oj/fetch';
-import { debugExecution } from './debug';
-=======
 import { verifyVeriCode, register, login, authenticateToken, updateName, updatePassword, getToken, getInfo, remove, getVeriCode } from './user_system';
-import { UserVerifyVeriCodeResponse, UserVerifyVeriCodeRequest, UserGetVeriCodeResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserLogoutResponse, UserRegisterRequest, UserRegisterResponse, UserGetVeriCodeRequest } from './api';
+import { UserVerifyVeriCodeResponse, UserGetVeriCodeResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserLogoutResponse, UserRegisterRequest, UserRegisterResponse, UserGetVeriCodeRequest } from './api';
 import { handleOj } from './oj';
 import { handleWs } from './ws';
 import { handleCpp } from './cpp';
->>>>>>> 66ba1ce83575894e68bad6dad5b39fa8318056d0
 
 tmp.setGracefulCleanup();
 // need change to customize local server. 
@@ -95,25 +84,8 @@ connectToMongoDB();
 
 handleWs(app as never);
 
-<<<<<<< HEAD
-app.post('/cpp/getHeaderFile', (req, res) => {
-  try {
-    const request: CppGetHeaderFileRequest = req.body;
-    const response = getHeaderFileHandler(request);
-    res.json(response);
-  } catch (e) {
-    console.log('get file');
-    res.json(<CppGetHeaderFileResponse>{
-      success: false,
-      reason: e,
-    });
-  }
-});
-/* user system */
-=======
 handleCpp(app);
 
->>>>>>> 66ba1ce83575894e68bad6dad5b39fa8318056d0
 app.post('/user/register', async (req, res) => {
   try {
     const request: UserRegisterRequest = req.body;
@@ -228,11 +200,8 @@ app.get('/user/verify/:token', async (req, res) => {
 });
 
 
-<<<<<<< HEAD
-=======
 app.post('/user/authorize', async (req, res) => {
 });
->>>>>>> 66ba1ce83575894e68bad6dad5b39fa8318056d0
 
 app.get('/user/getToken', async (req, res) => {
   const username = await authenticateToken(req);

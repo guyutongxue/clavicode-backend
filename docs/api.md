@@ -368,10 +368,12 @@ type OjSubmitResponse = {
 
 获取验证码
 
+```
 POST $PREFIX/user/getVeriCode
+```
 
 ```typescript
-type UserGetVeriCodeRequest={
+type UserGetVeriCodeRequest = {
   email: string;
 };
 

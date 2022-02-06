@@ -13,13 +13,9 @@ build/*
 dist/*
 
 /static/**
-<<<<<<< HEAD
-# node_modules
-.env
-=======
-node_modules
+
 .env
 
 # Python virtual env
 pyvenv/
->>>>>>> 66ba1ce83575894e68bad6dad5b39fa8318056d0
+
