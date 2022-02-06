@@ -154,16 +154,13 @@ export type CppGetHeaderFileResponse = {
 }
 
 export type UserRegisterRequest = {
-  email: string;
+  nickname: string;
   username: string;
   password: string;
 };
 export type UserGetVeriCodeRequest={
+  username: string;
   email: string;
-};
-export type UserVerifyVeriCodeRequest={
-  email: string;
-  veriCode: string;
 };
 export type UserRegisterResponse = {
   success: true;
@@ -173,17 +170,47 @@ export type UserRegisterResponse = {
 };
 
 export type UserLoginRequest = {
-  email: string;
+  username: string;
   password: string;
 };
 
 export type UserGetInfoResponse = {
   success: true;
+  nickname: string,
   username: string;
+  email: string | undefined,
+  status: string,
   authorized: Map<string, string[]> | undefined;
 } | {
   success: false;
 }
+
+export type UserLoginResponse = UserRegisterResponse;
+
+export type UserLogoutResponse = UserRegisterResponse;
+
+export type UserGetVeriCodeResponse = UserRegisterResponse;
+
+export type UserVerifyVeriCodeResponse = UserRegisterResponse;
+
+export type UserChangePasswordRequest = {
+  username: string; 
+  oldPassword: string;
+  newPassword: string;
+}
+export type UserUpdateNameRequest = {
+  username: string; 
+  newNickname: string;
+}
+export type UserChangePasswordResponse = UserRegisterResponse;
+
+export type UserChangeUsernameRequest = {
+  newNickname: string;
+}
+export type UserChangeUsernameResponse = UserRegisterResponse;
+
+
+// OJ
 
 export type OjSetCourseRequest = {
   url: string;
@@ -199,30 +226,6 @@ export type OjSetCourseResponse = {
   success: false;
   reason: string;
 };
-
-export type UserLoginResponse = UserRegisterResponse;
-
-export type UserLogoutResponse = UserRegisterResponse;
-
-export type UserGetVeriCodeResponse = UserRegisterResponse;
-
-export type UserVerifyVeriCodeResponse = UserRegisterResponse;
-
-export type UserChangePasswordRequest = {
-  email: string; 
-  oldPassword: string;
-  newPassword: string;
-}
-export type UserChangePasswordResponse = UserRegisterResponse;
-
-
-export type UserChangeUsernameRequest = {
-  newUsername: string;
-}
-export type UserChangeUsernameResponse = UserRegisterResponse;
-
-
-// OJ
 
 export type OjSubmitRequest = {
   problemId: string;

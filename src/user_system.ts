@@ -16,15 +16,17 @@
 // along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import { UserModel,  VeriCodeModel } from "./db/utils";
+import { UserModel,  VeriCodeModel, status_t } from "./db/utils";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import * as path from 'path';
-import { Request, Response } from 'express';
-import { UserRegisterRequest, UserLoginRequest, UserChangePasswordRequest, UserGetInfoResponse, UserChangeUsernameResponse, OjSetCourseResponse, UserGetVeriCodeRequest, UserGetVeriCodeResponse, UserVerifyVeriCodeRequest, UserVerifyVeriCodeResponse } from './api';
+import { Request } from 'express';
+import { UserUpdateNameRequest, UserRegisterRequest, UserLoginRequest, UserChangePasswordRequest, UserGetInfoResponse, UserChangeUsernameResponse, OjSetCourseResponse, UserGetVeriCodeRequest, UserGetVeriCodeResponse } from './api';
 import nodemailer from 'nodemailer';
 import smtpTransport from 'nodemailer-smtp-transport';
 
+const regEmail=/^([a-zA-Z0-9]+[_|-|.]?)*[a-zA-Z0-9]+@pku.edu.cn$/;
+// one a-z one 0-9 length >= 6
+const regPassword= /^(?=.*?[a-z])(?=.*?[0-9]).{6,}$/;
 
 export type UserSysResponse = {
   success: boolean;
@@ -33,37 +35,52 @@ export type UserSysResponse = {
 }
 
 export async function register(body: UserRegisterRequest): Promise<UserSysResponse> {
-  if (!body.email || !body.password || !body.username) {
+  if (!body.password || !body.username || !body.nickname) {
     return { success: false, message: 'register form incorrect' };
   }
-  if (await UserModel.findOne({ email: body.email })) {
-    return { success: false, message: "Email Address " + body.email + " is already taken" };
+  if(await UserModel.findOne({username: body.username})){
+    return {success: false, message: "username is taken."};
   }
-  const regEmail=/^([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+@([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+\.[a-zA-Z]{2,3}$/;
-  if(!regEmail.test(body.email)){
-    return {success: false, message: "the email's format is incorrect"};
+  if(!regPassword.test(body.password)){
+    return {success: false, message: "fail password requirement: at least one a-z one 0-9 length >= 6"};
   }
-  const regPass= /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
-  if(!regPass.test(body.password)){
-    return {success: false, message: "fail password requirement: at least one A-Z, one a-z, one 0-9, one special character(#?!@$%^&*-), length >= 8"};
-  }
+  
   const user = new UserModel({
-    name: body.username,
-    email: body.email,
+    nickname:body.nickname,
+    username: body.username,
     password: await bcrypt.hash(body.password, 10),
+    status: status_t.UNREGISTERED,
     authorized: new Map<string, string[]>(),
   });
+  await user.save();
   return { success: true };
 }
 
-export async function verifyVeriCode(body: UserVerifyVeriCodeRequest): Promise<UserVerifyVeriCodeResponse>{
-  const veriCode = await VeriCodeModel.findOne({email: body.email});
-  if(!veriCode) {
-    return {success: false, reason: "email not found"};
+export async function verifyVeriCode(token: string): Promise<UserSysResponse>{
+  try{
+    interface TokenIF{
+      username: string;
+      email: string;
+    }
+    const decoded_token = jwt.verify(token, process.env.JWT_SECRET as string) as TokenIF;
+    const veriCode = await VeriCodeModel.findOne({email: decoded_token.email});
+    if(veriCode) {
+      const user = await UserModel.findOne({username: decoded_token.username});
+      if(user){
+        user.email = veriCode.email;
+        user.status = status_t.UNVERIFIED;
+        user.markModified("email");
+        user.markModified("status");
+        VeriCodeModel.deleteMany({email: decoded_token.email});
+        return {success: true};
+      }
+      else return {success: false, message: "token err"};
+    }
+    return {success: false, message: "email not found"};
+    
+  }catch(e){
+    return {success: false, message: "token err"};
   }
-  if(veriCode.veriCode === body.veriCode)
-    return {success: true};
-  return {success: false, reason: "wrong veriCode"};
 }
 
 
@@ -73,11 +90,10 @@ export async function getVeriCode(body: UserGetVeriCodeRequest): Promise<UserGet
     return { success: false, reason: 'register form incorrect' };
   }
   if (await UserModel.findOne({ email: body.email })) {
-    return { success: false, reason: "Email Address " + body.email + " is already taken" };
+    return { success: false, reason: "The email is already taken."};
   }
-  const regEmail=/^([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+@([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+\.[a-zA-Z]{2,3}$/;
   if(!regEmail.test(body.email)){
-    return {success: false, reason: "the email's format is incorrect"};
+    return {success: false, reason: "Email format error: require the pku email."};
   }
   const transport = nodemailer.createTransport(smtpTransport({
     host: 'smtp.163.com', // 服务
@@ -85,42 +101,46 @@ export async function getVeriCode(body: UserGetVeriCodeRequest): Promise<UserGet
     secure: true,
     auth: {
       user: 'clavicode@163.com', //用户名
-      pass: 'UABGRXMWDPLNMBXW' // SMTP授权码
+      pass: process.env.SMTP_PASSWORD // SMTP授权码
     }
   }));
 
-  const generateVeriCode=()=>{
-    let code = "";
-    for (let i = 0; i < 6; i++){
-      code += Math.floor(Math.random()*10).toString();
-    }
-    return code;
-  };
+  // const generateVeriCode=()=>{
+  //   let code = "";
+  //   for (let i = 0; i < 10; i++){
+  //     code += Math.floor(Math.random()*10).toString();
+  //   }
+  //   return code;
+  // };
 
-  const code = generateVeriCode();
+  // const code = generateVeriCode();
+  const jwtToken = jwt.sign({email: body.email, username: body.username}, process.env.JWT_SECRET as string, { expiresIn: '1h' });
   transport.sendMail({
     from: 'clavicode@163.com', 
             to: body.email, 
-            subject: '验证你的电子邮件', // 标题
+            subject: 'ClaviCode: verify your email', // 标题
             html: `
-            <p>你好！</p>
-            <p>您正在注册clavicode账号</p>
-            <p>你的验证码是：<strong style="color: #ff4e2a;">${code}</strong></p>
-            <p>***该验证码5分钟内有效***</p>` // html 内容
+            <p>Welcome to the clavicode community!</p>
+            <p>This is the verification email.</p>
+            <a href="https://clavi.cool/user/verify/${jwtToken}"> Click here to verify your email.</a>
+            <p>***Please verify in five minutes.***</p>` // html 内容
   },
   function() {
     transport.close(); 
   });
   VeriCodeModel.deleteMany({email: body.email}); // delete previous record
-  if(!await VeriCodeModel.insertMany({email: body.email, veriCode: code}))
+  if(!await VeriCodeModel.insertMany({email: body.email}))
     return {success: false, reason: "database error"};
   return { success: true };
 }
 
 export async function updatePassword(body: UserChangePasswordRequest): Promise<UserSysResponse> {
-  const user = await UserModel.findOne({ email: body.email });
+  const user = await UserModel.findOne({ username: body.username });
   if (user) {
     if (bcrypt.compareSync(body.oldPassword, user.password)) {
+      if(!regPassword.test(body.newPassword)){
+        return {success: false, message: "Email format error: require the pku email."};
+      }
       user.password = bcrypt.hashSync(body.newPassword, 10);
       user.markModified('password');
       await user.save();
@@ -132,48 +152,39 @@ export async function updatePassword(body: UserChangePasswordRequest): Promise<U
 }
 
 
-export async function updateName(email: string, username: string): Promise<UserChangeUsernameResponse> {
-  const user = await UserModel.findOne({ email });
+export async function updateName(body: UserUpdateNameRequest): Promise<UserChangeUsernameResponse> {
+  const user = await UserModel.findOne({ username: body.username });
   if (user) {
-    user.name = username;
-    user.markModified('name');
+    user.nickname = body.newNickname;
+    user.markModified('nickname');
     await user.save();
     return { success: true };
   }
   return { success: false, reason: "user not found" };
 }
 
-/** @deprecated use getInfo instead */
-export async function getUsername(email: string): Promise<string> {
-  const user = await UserModel.findOne({ email });
-  if (user) {
-    return user.name;
-  }
-  return "";
-}
-
 export async function login(body: UserLoginRequest): Promise<UserSysResponse> {
-  if (!body.email || !body.password)
+  if (!body.username || !body.password)
     return { success: false, message: 'login form incorrect' };
-  const user = await UserModel.findOne({ email: body.email });
+  const user = await UserModel.findOne({ username: body.username });
   if (!user)
     return { success: false, message: "user not found" };
   if (bcrypt.compareSync(body.password, user.password)) {
-    return getToken(body.email);
+    return getToken(body.username);
   }
   return { success: false };
 }
 
-export async function getToken(email: string): Promise<UserSysResponse> {
-  const token = jwt.sign({ email }, process.env.JWT_SECRET as string, { expiresIn: '1h' });
+export async function getToken(username: string): Promise<UserSysResponse> {
+  const token = jwt.sign({ username }, process.env.JWT_SECRET as string, { expiresIn: '1h' });
   return { success: true, token: token };
 }
 
-export async function logout(email: string): Promise<boolean> {
-  const user = await UserModel.findOne({ email: email });
+export async function logout(username: string): Promise<UserSysResponse> {
+  const user = await UserModel.findOne({ username: username });
   if (!user)
-    return false;
-  return true;
+    return {success: false};
+  return {success: true};
 }
 
 export async function remove(email: string): Promise<boolean> {
@@ -196,21 +207,21 @@ export async function authenticateToken(req: Request): Promise<string | null> {
   return new Promise<string | null>((resolve) => {
     jwt.verify(token, process.env.JWT_SECRET as string, (err, decoded) => {
       if (err || !decoded) resolve(null);
-      else resolve(decoded.email);
+      else resolve(decoded.username);
     });
   });
 }
 
-export async function getInfo(email: string): Promise<UserGetInfoResponse> {
-  const user = await UserModel.findOne({ email: email });
+export async function getInfo(username: string): Promise<UserGetInfoResponse> {
+  const user = await UserModel.findOne({ username: username });
   if (user) {
-    return { success: true, username: user.name, authorized: user.authorized };
+    return { success: true, nickname: user.nickname, email: user.email, username: user.username, status: user.status, authorized: user.authorized };
   }
   return { success: false };
 }
 
-export async function setCourse(email: string, OJtype: string, courseId: string): Promise<OjSetCourseResponse> {
-  const user = await UserModel.findOne({ email: email });
+export async function setCourse(username: string, OJtype: string, courseId: string): Promise<OjSetCourseResponse> {
+  const user = await UserModel.findOne({ username: username });
   console.log(OJtype, courseId);
   if (user) {
     try {

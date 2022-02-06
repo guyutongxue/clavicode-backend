@@ -16,11 +16,18 @@
 // along with clavicode-backend.  If not, see <http://www.gnu.org/licenses/>.
 
 // the mongodb connection
-import { Schema, model, Document, connect } from "mongoose";
+import { Schema, model, connect } from "mongoose";
+export enum status_t{
+  UNREGISTERED = "UNREGISTERED",
+  UNVERIFIED = "UNVERIFIED",
+  VERIFIED = "VERIFIED",
+}
 export interface User {
-  name: string;
-  email: string;
+  nickname: string;
+  username: string;
   password: string;
+  status: string;
+  email?: string;
   authorized?: Map<string, string[]>;
 }
 
@@ -33,14 +40,15 @@ export interface File {
 
 export interface VeriCode {
   email: string;
-  veriCode: string;
   expire_at?: Date;
 }
 
 const userSchema = new Schema<User>({
-  name: { type: String, required: true },
-  email: { type: String, required: true },
+  nickname: { type: String, required: true },
+  username: {type: String, required: true},
   password: { type: String, required: true },
+  status: {type: String, enum: status_t, default: status_t.UNREGISTERED},
+  email: { type: String, default: "" },
   authorized: {
     type: Map, 
     of: [String], 
@@ -57,7 +65,6 @@ const fileSchema = new Schema<File>({
 
 const veriCodeSchema = new Schema<VeriCode>({
   email: {type: String, required: true},
-  veriCode: {type: String, required: true},
   expire_at: {type: Date, default: Date.now, expires: 300}
 });
 

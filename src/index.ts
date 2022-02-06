@@ -30,7 +30,7 @@ import * as path from 'path';
 import { connectToMongoDB } from './db/utils';
 import { verifyVeriCode, register, login, authenticateToken, updateName, updatePassword, getToken, getInfo, setCourse, remove, getVeriCode } from './user_system';
 import { languageServerHandler } from './language_server';
-import { UserVerifyVeriCodeResponse, UserVerifyVeriCodeRequest, UserGetVeriCodeResponse, CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, OjSubmitRequest, OjSubmitResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserLogoutResponse, UserRegisterRequest, UserRegisterResponse, UserGetVeriCodeRequest } from './api';
+import { UserGetVeriCodeResponse, CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, OjSubmitRequest, OjSubmitResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserLogoutResponse, UserRegisterRequest, UserRegisterResponse, UserGetVeriCodeRequest } from './api';
 import { compileHandler } from './compile_handler';
 import { getHeaderFileHandler } from './get_header_file_handler';
 import { findExecution, interactiveExecution } from './executions/interactive_execution';
@@ -131,16 +131,16 @@ app.post('/cpp/getHeaderFile', (req, res) => {
     });
   }
 });
-
+/* user system */
 app.post('/user/register', async (req, res) => {
   try {
     const request: UserRegisterRequest = req.body;
     const response = await register(request);
     if (response.success) {
       res.cookie('token', response.token, { httpOnly: true });
-      res.json(<UserLoginResponse>{ success: true });
+      res.json(<UserRegisterResponse>{ success: true });
     } else {
-      res.json(<UserLoginResponse>{ success: false, reason: response.message });
+      res.json(<UserRegisterResponse>{ success: false, reason: response.message });
     }
   } catch (e) {
     res.json(<UserRegisterResponse>{
@@ -198,11 +198,11 @@ app.get('/user/logout', async (req, res) => {
 });
 
 app.get('/user/delete', async (req, res) => {
-  const email = await authenticateToken(req);
-  if (email) {
+  const username = await authenticateToken(req);
+  if (username) {
     try {
       res.clearCookie('token');
-      const suc = await remove(email);
+      const suc = await remove(username);
       res.json({ success: suc });
     } catch (e) {
       res.json({ success: false });
@@ -214,9 +214,9 @@ app.get('/user/delete', async (req, res) => {
 });
 
 app.get('/user/getInfo', async (req, res) => {
-  const email = await authenticateToken(req);
-  if (email) {
-    const ret = await getInfo(email);
+  const username = await authenticateToken(req);
+  if (username) {
+    const ret = await getInfo(username);
     res.json(ret);
 
   } else {
@@ -237,28 +237,21 @@ app.post('/user/getVeriCode', async (req, res) => {
   }
 });
 
-app.post('/user/veriVeriCode', async (req, res) => {
-  try {
-    const request: UserVerifyVeriCodeRequest = req.body;
-    const response = await verifyVeriCode(request);
-    res.json(response);
-  } catch (e) {
-    res.json(<UserVerifyVeriCodeResponse>{
-      success: false,
-      reason: e
-    });
-  }
+app.get('/user/verify/:token', async (req, res) => {
+  const { token } = req.params;
+  const response = await verifyVeriCode(token);
+  if (response.success)
+    res.json({ success: true });
+  else res.json({ success: false, reason: response.message });
 });
 
 
-app.post('/user/authorize', async (req, res) => {
-})
 
 app.get('/user/getToken', async (req, res) => {
-  const email = await authenticateToken(req);
-  if (email) {
-    const token = await getToken(email);
-    if (email) {
+  const username = await authenticateToken(req);
+  if (username) {
+    const token = await getToken(username);
+    if (username) {
       res.cookie('token', token, { httpOnly: true });
       res.json({ success: true });
     }
@@ -268,16 +261,16 @@ app.get('/user/getToken', async (req, res) => {
 });
 
 
-app.post('/user/changeUsername', async (req: Request, res: Response) => {
-  const email = await authenticateToken(req);
-  if (email === null) {
+app.post('/user/changeNickname', async (req: Request, res: Response) => {
+  const username = await authenticateToken(req);
+  if (username === null) {
     res.json(<UserChangeUsernameResponse>{
       success: false,
       reason: 'invalid token'
     });
   } else {
     const request: UserChangeUsernameRequest = req.body;
-    const response = await updateName(email, request.newUsername);
+    const response = await updateName({ username: username, newNickname: request.newNickname });
     res.json(response);
   }
 });

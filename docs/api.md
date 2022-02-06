@@ -312,10 +312,11 @@ GET $PREFIX/user/getInfo
 ```ts
 type UserGetInfoResponse = {
   success: true;
+  nickname: string,
   username: string;
-  authorized: {
-    [key: string]:string[];
-  };
+  email: string | undefined,
+  status: string,
+  authorized: Map<string, string[]> | undefined;
 } | {
   success: false;
 };
@@ -383,24 +384,7 @@ type UserGetVeriCodeResponse = {
 };
 ```
 
-验证验证码
-
-POST $PREFIX/user/veriVeriCode
-
-```typescript
-type UserVerifyVeriCodeRequest={
-  email: string;
-  veriCode: string;
-};
-
-type UserVerifyVeriCodeResponse = {
-  success: true;
-  // title: string;
-} | {
-  success: false;
-  reason: string;
-};
-```
+验证验证码 通过点击向用户邮箱中发送的邮件的链接完成
 
 
 ### 查看提交结果
