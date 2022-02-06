@@ -7,7 +7,7 @@ RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
 # Install all dependencies
 RUN apt update --fix-missing \
-  && apt install -y curl git \
+  && apt install -y curl git python-is-python3 \
   && apt install -y build-essential libssl-dev \
   && apt install -y software-properties-common
 RUN add-apt-repository -y ppa:ubuntu-toolchain-r/test
@@ -49,6 +49,8 @@ VOLUME /var/backend/log
 
 # Bundle app source
 COPY . /var/backend
+
+RUN ./scripts/create_pyvenv.sh
 
 RUN yarn \
   && yarn build \

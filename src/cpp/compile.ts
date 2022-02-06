@@ -18,10 +18,10 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { execFile } from 'child_process';
-import { CppCompileFileResponse, CppCompileNoneResponse, CppCompileRequest, CppCompileResponse, GccDiagnostics, } from './api';
+import { CppCompileFileResponse, CppCompileNoneResponse, CppCompileRequest, CppCompileResponse, GccDiagnostics, } from '../api';
 import * as tmp from 'tmp';
-import { fileExecution } from './executions/file_execution';
-import { save } from './db/file';
+import { fileExecution } from '../executions/file';
+import { save } from '../db/file';
 
 type ExecCompilerResult = {
   success: boolean;
@@ -71,6 +71,7 @@ function execCompiler(srcPath: string, noLink: boolean, debugInfo: boolean): Pro
     outputFileName = changeExt(srcPath, '.o');
     args = [
       //...store.get('build.compileArgs').map(parseDynamic),
+      '--std=c++20',
       ...(debugInfo ? ['-g'] : []),
       '-c',
       srcPath,

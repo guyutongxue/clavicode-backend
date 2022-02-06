@@ -22,12 +22,14 @@ import dotenv from 'dotenv';
 import express from 'express';
 import { Request, Response } from 'express';
 import expressWs from 'express-ws';
+import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import * as tmp from 'tmp';
 import * as path from 'path';
 
 import { connectToMongoDB } from './db/utils';
+<<<<<<< HEAD
 import { verifyVeriCode, register, login, authenticateToken, updateName, updatePassword, getToken, getInfo, setCourse, remove, getVeriCode } from './user_system';
 import { languageServerHandler } from './language_server';
 import { UserGetVeriCodeResponse, CppCompileErrorResponse, CppCompileRequest, CppCompileResponse, CppGetHeaderFileRequest, CppGetHeaderFileResponse, OjSubmitRequest, OjSubmitResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserLogoutResponse, UserRegisterRequest, UserRegisterResponse, UserGetVeriCodeRequest } from './api';
@@ -36,23 +38,34 @@ import { getHeaderFileHandler } from './get_header_file_handler';
 import { findExecution, interactiveExecution } from './executions/interactive_execution';
 import { getProblem, getSolution, listProblems, listProblemSets, submitCode } from './oj/fetch';
 import { debugExecution } from './debug';
+=======
+import { verifyVeriCode, register, login, authenticateToken, updateName, updatePassword, getToken, getInfo, remove, getVeriCode } from './user_system';
+import { UserVerifyVeriCodeResponse, UserVerifyVeriCodeRequest, UserGetVeriCodeResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserLogoutResponse, UserRegisterRequest, UserRegisterResponse, UserGetVeriCodeRequest } from './api';
+import { handleOj } from './oj';
+import { handleWs } from './ws';
+import { handleCpp } from './cpp';
+>>>>>>> 66ba1ce83575894e68bad6dad5b39fa8318056d0
 
 tmp.setGracefulCleanup();
 // need change to customize local server. 
 dotenv.config({ path: path.join(__dirname, '../.env') });
-const app: expressWs.Application = express() as any;
+const app = express();
 const {
   PORT = "3000",
-} = process.env;   //默认端口为3000
+} = process.env;
 
 if (process.env.PRODUCTION) {
   const cert = fs.readFileSync(path.join(__dirname, '../cert/clavi.cool.pem'), 'utf-8');
   const key = fs.readFileSync(path.join(__dirname, '../cert/clavi.cool.key'), 'utf-8');
 
-  const server = https.createServer({ key, cert }, app).listen(PORT, () => {
-    console.log('server started at https://localhost:' + PORT);
-  });
+  const server = https.createServer({ key, cert }, app).listen(PORT);
   expressWs(app, server);
+  
+  // Redirect http on 80 port to https
+  http.createServer(function (req, res) {
+    res.writeHead(301, { "Location": "https://" + req.headers['host'] + req.url });
+    res.end();
+  }).listen(80);
 } else {
   const server = http.createServer(app).listen(PORT, () => {
     console.log('server started at http://localhost:' + PORT);
@@ -69,6 +82,10 @@ app.use(function (req, res, next) {
   res.header("Cross-Origin-Embedder-Policy", "require-corp");
   next();
 });
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+}));
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.static('static'));
@@ -76,48 +93,9 @@ app.use(express.static('static'));
 // connect to the mongodb server; this is a async function should be awaited..
 connectToMongoDB();
 
-app.ws('/ws/execute/:token', async function (ws, req) {
-  const filename = await findExecution(req.params.token);
-  console.log("Execute: arrived", filename);
-  if (filename !== null) {
-    interactiveExecution(ws, filename);
-  } else {
-    ws.close();
-  }
-});
+handleWs(app as never);
 
-app.ws('/ws/debug/gdb/:token', async function (ws, req) {
-  const filename = await findExecution(req.params.token);
-  console.log("GDB: arrived", filename);
-  if (filename !== null) {
-    debugExecution(ws, filename);
-  } else {
-    ws.close();
-  }
-});
-
-app.ws('/ws/languageServer/:lang', function (ws, req) {
-  languageServerHandler(ws, req.params.lang);
-  setTimeout(() => ws.close(), 5 * 60 * 1000);
-});
-
-app.post('/cpp/compile', async (req, res) => {
-  try {
-    const myRequest: CppCompileRequest = req.body;
-    console.log(myRequest);
-    const response: CppCompileResponse = await compileHandler(myRequest);
-    res.json(response);
-  } catch (e) {
-    console.log('fail to decode request');
-    console.log(e);
-    res.json(<CppCompileErrorResponse>{
-      status: 'error',
-      errorType: 'other',
-      error: 'JSON decode failure'
-    });
-  }
-});
-
+<<<<<<< HEAD
 app.post('/cpp/getHeaderFile', (req, res) => {
   try {
     const request: CppGetHeaderFileRequest = req.body;
@@ -132,6 +110,10 @@ app.post('/cpp/getHeaderFile', (req, res) => {
   }
 });
 /* user system */
+=======
+handleCpp(app);
+
+>>>>>>> 66ba1ce83575894e68bad6dad5b39fa8318056d0
 app.post('/user/register', async (req, res) => {
   try {
     const request: UserRegisterRequest = req.body;
@@ -246,6 +228,11 @@ app.get('/user/verify/:token', async (req, res) => {
 });
 
 
+<<<<<<< HEAD
+=======
+app.post('/user/authorize', async (req, res) => {
+});
+>>>>>>> 66ba1ce83575894e68bad6dad5b39fa8318056d0
 
 app.get('/user/getToken', async (req, res) => {
   const username = await authenticateToken(req);
@@ -275,67 +262,4 @@ app.post('/user/changeNickname', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/oj/listProblemSets', async (req, res) => {
-  const response = await listProblemSets();
-  res.json(response);
-});
-
-app.get('/oj/listProblems/:problemSetId', async (req, res) => {
-  const { problemSetId } = req.params;
-  if (!problemSetId) {
-    res.json({
-      success: false,
-      reason: 'no problem set id'
-    });
-  }
-  const response = await listProblems(problemSetId);
-  res.json(response);
-});
-
-app.get('/oj/getProblem/:problemSetId/:problemId', async (req, res) => {
-  const { problemSetId, problemId } = req.params;
-  if (!problemSetId || !problemId) {
-    res.json({
-      success: false,
-      reason: 'no problem set id or problem id'
-    });
-  }
-  const response = await getProblem(problemId, problemSetId);
-  res.json(response);
-});
-
-app.post('/oj/submit', async (req, res) => {
-  try {
-    const request: OjSubmitRequest = req.body;
-    const response = await submitCode(request);
-    res.json(response);
-  } catch {
-    res.json(<OjSubmitResponse>{
-      success: false,
-      reason: 'JSON decode failure'
-    });
-  }
-});
-
-app.get('/oj/getSolution/:solutionId', async (req, res) => {
-  const { solutionId } = req.params;
-  if (!solutionId) {
-    res.json({
-      success: false,
-      reason: 'no solution id'
-    });
-  }
-  const response = await getSolution(solutionId);
-  res.json(response);
-});
-
-app.post('/oj/setCourse', async (req, res) => {
-  const email = await authenticateToken(req);
-  console.log(email);
-  if (email) {
-    res.json(await setCourse(email, req.body.OJtype, req.body.courseId));
-  }
-  else {
-    res.json({ success: false, reason: 'bad header' });
-  }
-});
+handleOj(app);
