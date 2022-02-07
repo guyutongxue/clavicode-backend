@@ -129,7 +129,7 @@ export async function getVeriCode(username: string, email: string): Promise<User
       html: `
             <p>Welcome to the clavicode community!</p>
             <p>This is the verification email.</p>
-            <a href="https://localhost:3000/user/verify/${jwtToken}"> Click here to verify your email.</a>
+            <a href="http://localhost:3000/user/verify/${jwtToken}"> Click here to verify your email.</a>
             <p>***Please verify in five minutes.***</p>` // html 内容
     }, resolve);
   });
