@@ -37,7 +37,7 @@ export type UserSysResponse = {
 }
 
 export async function register(body: UserRegisterRequest): Promise<UserSysResponse> {
-  if (!body.password || !body.username || !body.nickname) {
+  if (!body.password || !body.username) {
     return { success: false, message: 'register form incorrect' };
   }
   if (await UserModel.findOne({ username: body.username })) {
@@ -48,7 +48,6 @@ export async function register(body: UserRegisterRequest): Promise<UserSysRespon
   }
 
   const user = new UserModel({
-    nickname: body.nickname,
     username: body.username,
     password: await bcrypt.hash(body.password, 10),
     isVIP: false,
@@ -75,6 +74,9 @@ export async function verifyVeriCode(token: string): Promise<UserSysResponse> {
           user.isVIP = true;
           user.markModified("isVIP");
         }
+        else{
+          user.isVIP = false;
+        }
         user.markModified("email");
         user.save();
         VeriCodeModel.deleteMany({ email: decoded_token.email });
@@ -89,6 +91,18 @@ export async function verifyVeriCode(token: string): Promise<UserSysResponse> {
   }
 }
 
+export async function searchUser(username: string): Promise<UserSysResponse>{
+  try{
+    const user = await UserModel.findOne({username: username});
+    if (user) {
+      return {success: true};
+    }
+    return {success: false};
+  }
+  catch (e){
+    return {success: false};
+  }
+}
 
 // send the verification code to the given email addr
 export async function getVeriCode(username: string, email: string): Promise<UserGetVeriCodeResponse> {
@@ -146,29 +160,18 @@ export async function updatePassword(body: UserChangePasswordRequest): Promise<U
   if (user) {
     if (bcrypt.compareSync(body.oldPassword, user.password)) {
       if (!regPassword.test(body.newPassword)) {
-        return { success: false, message: "Email format error: require the pku email." };
+        return { success: false, message: "Password format incorrect: one letter, one number, length >= 6" };
       }
       user.password = bcrypt.hashSync(body.newPassword, 10);
       user.markModified('password');
       await user.save();
       return { success: true };
     }
-    return { success: false, message: "incorrect password" };
+    return { success: false, message: "old password incorrect" };
   }
-  return { success: false, message: "user not found" };
+  return { success: false, message: "please register again" };
 }
 
-
-export async function updateName(body: UserUpdateNameRequest): Promise<UserChangeUsernameResponse> {
-  const user = await UserModel.findOne({ username: body.username });
-  if (user) {
-    user.nickname = body.newNickname;
-    user.markModified('nickname');
-    await user.save();
-    return { success: true };
-  }
-  return { success: false, reason: "user not found" };
-}
 
 export async function login(body: UserLoginRequest): Promise<UserSysResponse> {
   if (!body.username || !body.password)
@@ -222,7 +225,7 @@ export async function authenticateToken(req: Request): Promise<string | null> {
 export async function getInfo(username: string): Promise<UserGetInfoResponse> {
   const user = await UserModel.findOne({ username: username });
   if (user) {
-    return { success: true, nickname: user.nickname, email: user.email, username: user.username, isVIP: user.isVIP, authorized: user.authorized };
+    return { success: true, email: user.email, username: user.username, isVIP: user.isVIP, authorized: user.authorized };
   }
   return { success: false };
 }

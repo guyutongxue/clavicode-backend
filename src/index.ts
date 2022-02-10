@@ -29,7 +29,7 @@ import * as tmp from 'tmp';
 import * as path from 'path';
 
 import { connectToMongoDB } from './db/utils';
-import { verifyVeriCode, register, login, authenticateToken, updateName, updatePassword, getToken, getInfo, remove, getVeriCode } from './user_system';
+import { verifyVeriCode, register, login, authenticateToken, updatePassword, getToken, getInfo, remove, getVeriCode, searchUser } from './user_system';
 import { UserGetVeriCodeResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserLogoutResponse, UserRegisterRequest, UserRegisterResponse, UserGetVeriCodeRequest } from './api';
 import { handleOj } from './oj';
 import { handleWs } from './ws';
@@ -134,9 +134,17 @@ app.post('/user/login', async (req, res) => {
 
 
 app.post('/user/changePassword', async (req, res) => {
-  const request: UserChangePasswordRequest = req.body;
-  const response = await updatePassword(request);
-  res.json(response);
+  const username = await authenticateToken(req) as string;
+  const request = req.body;
+  const response = await updatePassword({
+    oldPassword: request.oldPassword,
+    newPassword: request.newPassword,
+    username: username
+  });
+  if (response.success)
+    res.json({success: true});
+  else 
+    res.json({success: false, reason: response.message});
 });
 
 app.get('/user/logout', async (req, res) => {
@@ -202,9 +210,6 @@ app.get('/user/verify/:token', async (req, res) => {
 });
 
 
-app.post('/user/authorize', async (req, res) => {
-});
-
 app.get('/user/getToken', async (req, res) => {
   const username = await authenticateToken(req);
   if (username) {
@@ -212,25 +217,27 @@ app.get('/user/getToken', async (req, res) => {
     if (username) {
       res.cookie('token', token, { httpOnly: true });
       res.json({ success: true });
+      return;
     }
     res.json({ success: false });
+    return;
   }
   res.json({ success: false });
+  return;
 });
 
-
-app.post('/user/changeNickname', async (req: Request, res: Response) => {
-  const username = await authenticateToken(req);
-  if (username === null) {
-    res.json(<UserChangeUsernameResponse>{
-      success: false,
-      reason: 'invalid token'
-    });
-  } else {
-    const request: UserChangeUsernameRequest = req.body;
-    const response = await updateName({ username: username, newNickname: request.newNickname });
-    res.json(response);
+app.get('/user/search/', async (req, res) => {
+  const username = req.query.username as string;
+  console.log(username);
+  let suc = false;
+  if (username){
+    const r = await searchUser(username);
+    if (r.success){
+      suc = true;
+    }
   }
+  console.log(suc);
+  res.json({success:suc});
 });
 
 handleOj(app);

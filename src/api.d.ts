@@ -154,7 +154,6 @@ export type CppGetHeaderFileResponse = {
 }
 
 export type UserRegisterRequest = {
-  nickname: string;
   username: string;
   password: string;
 };
@@ -175,7 +174,6 @@ export type UserLoginRequest = {
 
 export type UserGetInfoResponse = {
   success: true;
-  nickname: string,
   username: string;
   email: string | undefined,
   isVIP: boolean,

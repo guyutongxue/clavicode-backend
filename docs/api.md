@@ -312,7 +312,6 @@ GET $PREFIX/user/getInfo
 ```ts
 type UserGetInfoResponse = {
   success: true;
-  nickname: string,
   username: string;
   email: string | undefined,
   status: string,

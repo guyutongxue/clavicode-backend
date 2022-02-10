@@ -18,7 +18,6 @@
 // the mongodb connection
 import { Schema, model, connect } from "mongoose";
 export interface User {
-  nickname: string;
   username: string;
   password: string;
   email?: string;
@@ -39,7 +38,6 @@ export interface VeriCode {
 }
 
 const userSchema = new Schema<User>({
-  nickname: { type: String, required: true },
   username: {type: String, required: true},
   password: { type: String, required: true },
   email: { type: String, default: "" },
