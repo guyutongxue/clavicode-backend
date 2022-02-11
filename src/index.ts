@@ -29,11 +29,12 @@ import * as tmp from 'tmp';
 import * as path from 'path';
 
 import { connectToMongoDB } from './db/utils';
-import { verifyVeriCode, register, login, authenticateToken, updatePassword, getToken, getInfo, remove, getVeriCode, searchUser } from './user_system';
+import { verifyVeriCode, register, login, authenticateToken, updatePassword, getToken, getInfo, remove, getVeriCode, searchUser, forgetPassword, verifyChangePassword } from './user_system';
 import { UserGetVeriCodeResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserLogoutResponse, UserRegisterRequest, UserRegisterResponse, UserGetVeriCodeRequest } from './api';
 import { handleOj } from './oj';
 import { handleWs } from './ws';
 import { handleCpp } from './cpp';
+import { EphemeralKeyInfo } from 'tls';
 
 tmp.setGracefulCleanup();
 // need change to customize local server. 
@@ -209,6 +210,20 @@ app.get('/user/verify/:token', async (req, res) => {
   else res.status(200).send('ClaviCode: Email verify failed, please try again.');
 });
 
+app.get('/user/verifyChangePassword/:token', async (req, res) => {
+  const {token} = req.params;
+  const response = await verifyChangePassword(token);
+  const FRONTEND_HOST= process.env.PRODUCTION ? "https://calvi.cool" : "http://localhost:4200";
+  if (response.success)
+    res.status(200).send(`
+      <p>Dear ${response.username}: </p>
+      <p>Your password is reset to <mark>${response.password}</mark> .</p> 
+      <a href="${FRONTEND_HOST}"> clavicode</a>
+    `);
+  else {
+    res.status(200).send("failed change password");
+  }
+});
 
 app.get('/user/getToken', async (req, res) => {
   const username = await authenticateToken(req);
@@ -228,16 +243,20 @@ app.get('/user/getToken', async (req, res) => {
 
 app.get('/user/search/', async (req, res) => {
   const username = req.query.username as string;
-  console.log(username);
-  let suc = false;
-  if (username){
-    const r = await searchUser(username);
-    if (r.success){
-      suc = true;
-    }
+  const email = req.query.email as string;
+  console.log(username, email);
+  const r = await searchUser(username, email);
+  console.log(r.success);
+  res.json({success:r.success});
+});
+
+app.post('/user/forgotPassword/', async (req, res) =>{
+  const email = req.body.email as string;
+  const r = await forgetPassword(email);
+  if (r.success){
+    res.json ({success: true});
   }
-  console.log(suc);
-  res.json({success:suc});
+  else res.json ({success: false, reason: r.message});
 });
 
 handleOj(app);
