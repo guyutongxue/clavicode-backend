@@ -24,6 +24,9 @@ import { UserUpdateNameRequest, UserRegisterRequest, UserLoginRequest, UserChang
 import nodemailer from 'nodemailer';
 import smtpTransport from 'nodemailer-smtp-transport';
 
+
+const BACKEND_HOST = process.env.PRODUCTION ? "https://clavi.cool" : "http://localhost:3000";
+
 const regEmail = /^([a-zA-Z0-9_\-.]+)@([a-zA-Z0-9_\-.]+)([a-zA-Z]+)$/;
 
 const pkuEmail = /^([a-zA-Z0-9]+[_|-|.]?)*[a-zA-Z0-9]+@(stu\.)?pku\.edu\.cn$/;
@@ -34,6 +37,8 @@ export type UserSysResponse = {
   success: boolean;
   token?: string;
   message?: string;
+  username?:string;
+  password?:string;
 }
 
 export async function register(body: UserRegisterRequest): Promise<UserSysResponse> {
@@ -91,9 +96,28 @@ export async function verifyVeriCode(token: string): Promise<UserSysResponse> {
   }
 }
 
-export async function searchUser(username: string): Promise<UserSysResponse>{
+
+
+
+export async function verifyChangePassword(token: string): Promise<UserSysResponse>{
+  interface TokenIF {
+    email: string;
+    password: string;
+  }
+  const decoded_token = jwt.verify(token, process.env.JWT_SECRET as string) as TokenIF;
+  const user = await UserModel.findOne({email: decoded_token.email});
+  if (user){
+    user.password = bcrypt.hashSync(decoded_token.password, 10);
+    user.markModified('password');
+    await user.save();
+    return{success: true, password: decoded_token.password, username: user.username};
+  }
+  return {success: false};
+}
+export async function searchUser(username: string, email: string): Promise<UserSysResponse>{
+  console.log(username, email);
   try{
-    const user = await UserModel.findOne({username: username});
+    const user = await UserModel.findOne({ $or:[ {username:username}, {email:email}]});
     if (user) {
       return {success: true};
     }
@@ -102,6 +126,47 @@ export async function searchUser(username: string): Promise<UserSysResponse>{
   catch (e){
     return {success: false};
   }
+}
+
+export async function forgetPassword(email: string): Promise<UserSysResponse>{
+  console.log(email);
+  const user = await UserModel.findOne({email: email});
+  if(!user)
+    return {success: false, message: "email not found"};
+  const randomPassword=()=>{
+      let code = Math.random().toString(36).slice(-8);
+      while (!regPassword.test(code))
+        code = Math.random().toString(36).slice(-8);
+      return code;
+  };
+  const newPassword = randomPassword();
+  const jwtToken = jwt.sign({ email: email, password: newPassword}, process.env.JWT_SECRET as string, { expiresIn: '1h' });
+  const transport = nodemailer.createTransport(smtpTransport({
+    host: 'smtp.163.com', // 服务
+    port: 465, // smtp端口
+    secure: true,
+    auth: {
+      user: 'clavicode@163.com', //用户名
+      pass: process.env.SMTP_PASSWORD // SMTP授权码
+    }
+  }));
+  const err = await new Promise<Error | null>((resolve) => {
+    transport.sendMail({
+      from: "clavicode@163.com",
+      to: email,
+      subject: "Clavicode: find back password",
+      html: `
+            <p>Dear ${user.username}: </p>
+            <p>This is the password reset email from clavicode.</p>
+            <a href="${BACKEND_HOST}/user/verifyChangePassword/${jwtToken}">  Click this link to confirm the change.</a>
+      `
+    }, resolve);
+    console.log("changePasswordVeriAddress: ", `${BACKEND_HOST}/user/verifyChangePassword/${jwtToken}`);
+  });
+  if (err !== null){
+    return {success: false, message: 'send email error: ' + err.message};
+  }
+  return {success: true};
 }
 
 // send the verification code to the given email addr
@@ -125,14 +190,6 @@ export async function getVeriCode(username: string, email: string): Promise<User
     }
   }));
 
-  // const generateVeriCode=()=>{
-  //   let code = "";
-  //   for (let i = 0; i < 10; i++){
-  //     code += Math.floor(Math.random()*10).toString();
-  //   }
-  //   return code;
-  // };
-
   // const code = generateVeriCode();
   const jwtToken = jwt.sign({ email: email, username: username }, process.env.JWT_SECRET as string, { expiresIn: '1h' });
   const err = await new Promise<Error | null>((resolve) => {
@@ -143,7 +200,7 @@ export async function getVeriCode(username: string, email: string): Promise<User
       html: `
             <p>Welcome to the clavicode community!</p>
             <p>This is the verification email.</p>
-            <a href="http://localhost:3000/user/verify/${jwtToken}"> Click here to verify your email.</a>
+            <a href="${BACKEND_HOST}/user/verify/${jwtToken}"> Click here to verify your email.</a>
             <p>***Please verify in five minutes.***</p>` // html 内容
     }, resolve);
   });
