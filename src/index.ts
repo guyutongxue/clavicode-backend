@@ -227,8 +227,8 @@ app.get('/user/verify/:token', async (req, res) => {
   const { token } = req.params;
   const response = await verifyVeriCode(token);
   if (response.success)
-    res.status(200).send('ClaviCode: Email verified!');
-  else res.status(200).send('ClaviCode: Email verify failed, please try again.');
+    res.status(200).send('Clavicode: Email verified!');
+  else res.status(200).send('Clavicode: Email verify failed, please try again.');
 });
 
 app.get('/user/verifyChangePassword/:token', async (req, res) => {

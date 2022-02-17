@@ -63,7 +63,7 @@ export async function debugExecution(ws: ws, filename: string) {
   // Launch gdb.
   const gdb = new GdbController();
   const SANDBOX_PATH = 'sandbox';
-  const CWD = path.join(__dirname, './sandbox/bin');
+  const CWD = path.join(__dirname, '../sandbox/bin');
 
   function onResponse(res: GdbResponse) {
     if (stage === 'forward') {
@@ -86,7 +86,7 @@ export async function debugExecution(ws: ws, filename: string) {
     await new Promise((r) => setTimeout(r, 100));
   }
   stage = 'silent';
-  gdb.launch('/usr/bin/gdb', [], {
+  gdb.launch("/usr/bin/gdb", [], {
     cwd: CWD,
   });
   const pausedEvent = new EventEmitter();

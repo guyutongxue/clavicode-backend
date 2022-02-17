@@ -221,7 +221,7 @@ export async function getVeriCode(username: string, email: string): Promise<User
     transport.sendMail({
       from: 'clavicode@163.com',
       to: email,
-      subject: 'ClaviCode: verify your email', // 标题
+      subject: 'Clavicode: verify your email', // 标题
       html: `
             <p>Welcome to the clavicode community!</p>
             <p>This is the verification email.</p>
