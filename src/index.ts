@@ -43,6 +43,7 @@ const app = express();
 const {
   PORT = "3000",
 } = process.env;
+export const BACKEND_HOST = process.env.PRODUCTION ? "https://clavi.cool" : "http://localhost:3000";
 
 if (process.env.PRODUCTION) {
   const cert = fs.readFileSync(path.join(__dirname, '../cert/clavi.cool.pem'), 'utf-8');
