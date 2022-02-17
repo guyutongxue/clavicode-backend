@@ -34,7 +34,7 @@ export async function debugExecution(ws: ws, filename: string) {
   // Launch a pseudo-terminal, for gdb debuggee's io.
 
   // Print current tty device name, and keep terminal open.
-  const ptyProcess = pty.spawn(path.join(__dirname, "./utils/bin/pause"), [], {
+  const ptyProcess = pty.spawn(path.join(__dirname, "../utils/bin/pause"), [], {
     cwd: process.cwd(),
     env: process.env as { [key: string]: string },
   });
@@ -86,7 +86,7 @@ export async function debugExecution(ws: ws, filename: string) {
     await new Promise((r) => setTimeout(r, 100));
   }
   stage = 'silent';
-  gdb.launch('gdb', [], {
+  gdb.launch('/usr/bin/gdb', [], {
     cwd: CWD,
   });
   const pausedEvent = new EventEmitter();
