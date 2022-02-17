@@ -23,9 +23,7 @@ import { Request } from 'express';
 import { UserUpdateNameRequest, UserRegisterRequest, UserLoginRequest, UserChangePasswordRequest, UserGetInfoResponse, UserChangeUsernameResponse, OjSetCourseResponse, UserGetVeriCodeResponse } from './api';
 import nodemailer from 'nodemailer';
 import smtpTransport from 'nodemailer-smtp-transport';
-
-
-const BACKEND_HOST = process.env.PRODUCTION ? "https://clavi.cool" : "http://localhost:3000";
+import { BACKEND_HOST } from "./index";
 
 const regEmail = /^([a-zA-Z0-9_\-.]+)@([a-zA-Z0-9_\-.]+)([a-zA-Z]+)$/;
 
@@ -37,8 +35,8 @@ export type UserSysResponse = {
   success: boolean;
   token?: string;
   message?: string;
-  username?:string;
-  password?:string;
+  username?: string;
+  password?: string;
 }
 
 export async function register(body: UserRegisterRequest): Promise<UserSysResponse> {
@@ -69,7 +67,7 @@ export async function verifyVeriCode(token: string): Promise<UserSysResponse> {
       email: string;
     }
     const decoded_token = jwt.verify(token, process.env.JWT_SECRET as string) as TokenIF;
-    console.log(decoded_token); 
+    console.log(decoded_token);
     const veriCode = await VeriCodeModel.findOne({ email: decoded_token.email });
     if (veriCode) {
       const user = await UserModel.findOne({ username: decoded_token.username });
@@ -79,7 +77,7 @@ export async function verifyVeriCode(token: string): Promise<UserSysResponse> {
           user.isVIP = true;
           user.markModified("isVIP");
         }
-        else{
+        else {
           user.isVIP = false;
         }
         user.markModified("email");
@@ -99,48 +97,48 @@ export async function verifyVeriCode(token: string): Promise<UserSysResponse> {
 
 
 
-export async function verifyChangePassword(token: string): Promise<UserSysResponse>{
+export async function verifyChangePassword(token: string): Promise<UserSysResponse> {
   interface TokenIF {
     email: string;
     password: string;
   }
   const decoded_token = jwt.verify(token, process.env.JWT_SECRET as string) as TokenIF;
-  const user = await UserModel.findOne({email: decoded_token.email});
-  if (user){
+  const user = await UserModel.findOne({ email: decoded_token.email });
+  if (user) {
     user.password = bcrypt.hashSync(decoded_token.password, 10);
     user.markModified('password');
     await user.save();
-    return{success: true, password: decoded_token.password, username: user.username};
+    return { success: true, password: decoded_token.password, username: user.username };
   }
-  return {success: false};
+  return { success: false };
 }
-export async function searchUser(username: string, email: string): Promise<UserSysResponse>{
+export async function searchUser(username: string, email: string): Promise<UserSysResponse> {
   console.log(username, email);
-  try{
-    const user = await UserModel.findOne({ $or:[ {username:username}, {email:email}]});
+  try {
+    const user = await UserModel.findOne({ $or: [{ username: username }, { email: email }] });
     if (user) {
-      return {success: true};
+      return { success: true };
     }
-    return {success: false};
+    return { success: false };
   }
-  catch (e){
-    return {success: false};
+  catch (e) {
+    return { success: false };
   }
 }
 
-export async function forgetPassword(email: string): Promise<UserSysResponse>{
+export async function forgetPassword(email: string): Promise<UserSysResponse> {
   console.log(email);
-  const user = await UserModel.findOne({email: email});
-  if(!user)
-    return {success: false, message: "email not found"};
-  const randomPassword=()=>{
-      let code = Math.random().toString(36).slice(-8);
-      while (!regPassword.test(code))
-        code = Math.random().toString(36).slice(-8);
-      return code;
+  const user = await UserModel.findOne({ email: email });
+  if (!user)
+    return { success: false, message: "email not found" };
+  const randomPassword = () => {
+    let code = Math.random().toString(36).slice(-8);
+    while (!regPassword.test(code))
+      code = Math.random().toString(36).slice(-8);
+    return code;
   };
   const newPassword = randomPassword();
-  const jwtToken = jwt.sign({ email: email, password: newPassword}, process.env.JWT_SECRET as string, { expiresIn: '1h' });
+  const jwtToken = jwt.sign({ email: email, password: newPassword }, process.env.JWT_SECRET as string, { expiresIn: '1h' });
   const transport = nodemailer.createTransport(smtpTransport({
     host: 'smtp.163.com', // 服务
     port: 465, // smtp端口
@@ -163,10 +161,10 @@ export async function forgetPassword(email: string): Promise<UserSysResponse>{
     }, resolve);
     console.log("changePasswordVeriAddress: ", `${BACKEND_HOST}/user/verifyChangePassword/${jwtToken}`);
   });
-  if (err !== null){
-    return {success: false, message: 'send email error: ' + err.message};
+  if (err !== null) {
+    return { success: false, message: 'send email error: ' + err.message };
   }
-  return {success: true};
+  return { success: true };
 }
 
 export async function sendFeedback(msg: string): Promise<UserSysResponse>{
@@ -231,8 +229,8 @@ export async function getVeriCode(username: string, email: string): Promise<User
             <p>***Please verify in five minutes.***</p>` // html 内容
     }, resolve);
   });
-  if(err !== null)
-    return { success: false, reason: 'send email error'};
+  if (err !== null)
+    return { success: false, reason: 'send email error' };
   VeriCodeModel.deleteMany({ email: email }); // delete previous record
   if (!await VeriCodeModel.insertMany({ email: email }))
     return { success: false, reason: "database error" };
