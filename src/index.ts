@@ -29,12 +29,13 @@ import * as tmp from 'tmp';
 import * as path from 'path';
 
 import { connectToMongoDB } from './db/utils';
-import { verifyVeriCode, register, login, authenticateToken, updatePassword, getToken, getInfo, remove, getVeriCode, searchUser, forgetPassword, verifyChangePassword } from './user_system';
+import { verifyVeriCode, register, login, authenticateToken, updatePassword, getToken, getInfo, remove, getVeriCode, searchUser, forgetPassword, verifyChangePassword, sendFeedback } from './user_system';
 import { UserGetVeriCodeResponse, UserChangePasswordRequest, UserChangeUsernameRequest, UserChangeUsernameResponse, UserLoginRequest, UserLoginResponse, UserLogoutResponse, UserRegisterRequest, UserRegisterResponse, UserGetVeriCodeRequest } from './api';
 import { handleOj } from './oj';
 import { handleWs } from './ws';
 import { handleCpp } from './cpp';
 import { EphemeralKeyInfo } from 'tls';
+import { RSA_NO_PADDING } from 'constants';
 
 tmp.setGracefulCleanup();
 // need change to customize local server. 
@@ -194,6 +195,25 @@ app.post('/user/getVeriCode', async (req, res) => {
     console.log("username: ", username);
     const response = await getVeriCode(username, email);
     res.json(response);
+  } catch (e) {
+    res.json(<UserGetVeriCodeResponse>{
+      success: false,
+      reason: e
+    });
+  }
+});
+
+app.post('/user/feedback', async (req, res) => {
+  console.log(req.body.feedback)
+  try {
+    const feedback = req.body.feedback as string;
+    const response = await sendFeedback(feedback);
+    if(response.success){
+      res.json({success: true});
+    }
+    else {
+      res.json({success: false, reason: response.message});
+    }
   } catch (e) {
     res.json(<UserGetVeriCodeResponse>{
       success: false,

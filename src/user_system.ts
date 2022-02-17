@@ -169,6 +169,33 @@ export async function forgetPassword(email: string): Promise<UserSysResponse>{
   return {success: true};
 }
 
+export async function sendFeedback(msg: string): Promise<UserSysResponse>{
+  const transport = nodemailer.createTransport(smtpTransport({
+    host: 'smtp.163.com', // 服务
+    port: 465, // smtp端口
+    secure: true,
+    auth: {
+      user: 'clavicode@163.com', //用户名
+      pass: process.env.SMTP_PASSWORD // SMTP授权码
+    }
+  }));
+  const err = await new Promise<Error | null>((resolve) => {
+    transport.sendMail({
+      from: "clavicode@163.com",
+      to: "clavicode@163.com",
+      subject: "Feedback",
+      html: `
+            <p>${msg}</p>
+      `
+    }, resolve);
+  });
+  if (err !== null){
+    return {success: false, message: 'send email error: ' + err.message};
+  }
+  return {success: true};
+}
+
+
 // send the verification code to the given email addr
 export async function getVeriCode(username: string, email: string): Promise<UserGetVeriCodeResponse> {
   if (!email) {
