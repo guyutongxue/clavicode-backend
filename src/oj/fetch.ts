@@ -25,16 +25,25 @@ import { OjSubmitRequest, OjSubmitResponse, OjGetProblemResponse, OjGetSolutionR
 const testUserName = 'clavicode.test.user';
 const testUserPassword = 'clavicode';
 const testCourseId = '6c45504288b542eca6d96bfe4dc22b4a';
-let _cookie: string | null = null;
-function saveCookie(cookie: string | null) {
-  _cookie = cookie;
+
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
+let _cookie: Record<string, string> = {
+  "PG_client": "clavicode; Max-Age=315360000; Expires=Fri, 05-Dec-2031 05:34:07 GMT; Path=/; Secure"
+};
+function saveCookie(cookie: string[]) {
+  for (const c of cookie) {
+    const [key, ...value] = c.split('=');
+    _cookie[key] = value.join('');
+  }
 }
 function loadCookie(): { cookie?: string } {
-  if (_cookie === null) return {};
+  const cookie = Object.entries(_cookie).map(([k, v]) => `${k}=${v}`).join('; ');
   return {
-    cookie: _cookie,
+    cookie
   };
 }
+
 const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36 Edg/92.0.902.73";
 const acceptLanguage = "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6";
 const headers: HeadersInit = {
@@ -48,14 +57,17 @@ export async function login(): Promise<boolean> {
   const data = new URLSearchParams();
   data.append('username', username);
   data.append('password', password);
-  return fetch("https://programming.pku.edu.cn/programming/login.do", {
+  data.append('type', 'json');
+  console.log("LOGG");
+  return fetch("https://programming.pku.edu.cn/login.do", {
     method: "POST",
     headers: {
       ...headers,
       'Content-Type': 'application/x-www-form-urlencoded',
+      ...loadCookie()
     },
     redirect: 'manual',
-    body: data.toString() + "&login=%B5%C7%C2%BC" // 登录 in GB2312
+    body: data.toString()
   }).then(r => {
     const cookie = r.headers.get('Set-Cookie');
     if (cookie === null) {
@@ -63,7 +75,7 @@ export async function login(): Promise<boolean> {
       return false;
     } else {
       // console.log('success get cookie,cookie is ', cookie);
-      saveCookie(cookie);
+      saveCookie(cookie.split(', '));
       return true;
     }
   });
@@ -73,62 +85,51 @@ export async function login(): Promise<boolean> {
 export async function getCourseName(): Promise<string | null> {
   const id = testCourseId;
   if (id === null) return null;
-  const page = `https://programming.pku.edu.cn/programming/course/${id}/show.do`;
-  return fetch(page, {
+  const page = `https://programming.pku.edu.cn/course/${id}/?type=json`;
+  return tryFetch(page, {
     headers
   })
-    .then(r => r.buffer())
-    .then(buf => {
-      const text = iconv.decode(buf, 'gb2312');
-      const $ = cheerio.load(text);
-      const title = $(".showtitle");
-      title.children().remove();
-      return title.text().trim();
+    .then(r => {
+      if (r === null) return null;
+      const json = JSON.parse(r);
+      return json.course.title;
     });
 }
 
-export async function listProblemSets() :Promise<OjListProblemSetsResponse>{
+export async function listProblemSets(): Promise<OjListProblemSetsResponse> {
   const id = testCourseId;
-  const page = `https://programming.pku.edu.cn/programming/course/${id}/show.do`;
-  return fetch(page, {
+  const page = `https://programming.pku.edu.cn/course/${id}/?type=json`;
+  return tryFetch(page, {
     headers
   })
-    .then(r => r.buffer())
-    .then(buf => {
-      const text = iconv.decode(buf, 'gb2312');
-      const $ = cheerio.load(text);
-      const title = $(".showtitle");
-      title.children().remove();
-      const list = $("ul.homework");
+    .then(r => {
+      if (r === null) return { success: false, reason: "" };
+      const json = JSON.parse(r);
+      const title = json.course.title;
+      const sets: any[] = json.course.problemlists;
       return {
         success: true,
-        title: title.text().trim(),
-        problemSets: list.children().map(function () {
-          const a = $(this).children("a");
-          const color = $(this).children("font").attr("color");
-          const href = a.attr("href");
-          const text = a.text();
-          if (typeof href === "undefined") return null;
-          const result = /problemsId=([0-9a-f]{32})/.exec(href);
-          if (result === null) return null;
-          const pId = result[1];
+        title: title,
+        problemSets: sets.map(set => {
+          const openDate = new Date(set.assignment.openTime);
+          const closeDate = new Date(set.assignment.closeTime);
+          const now = new Date();
+          const isAvailable = now >= openDate && now <= closeDate;
           return {
-            problemSetId: pId,
-            title: text,
-            status: <'ok' | 'closed'>(color === "red" ? 'ok' : 'closed')
+            problemSetId: set.id,
+            title: set.title,
+            status: isAvailable ? 'ok' : 'closed'
           };
-        }).toArray()
+        })
       };
     });
 }
 
-async function tryFetch(url: string, options: RequestInit): Promise<string | null>;
-async function tryFetch(url: string, options: RequestInit, decode: true): Promise<string | null>;
-async function tryFetch(url: string, options: RequestInit, decode: false): Promise<Response | null>;
-async function tryFetch(url: string, options: RequestInit, decode = true): Promise<Response | string | null> {
+async function tryFetch(url: string, options: RequestInit): Promise<string | null> {
   function getOptions(): RequestInit {
     return {
       ...options,
+      redirect: 'manual',
       headers: {
         ...options.headers,
         ...loadCookie(),
@@ -137,11 +138,11 @@ async function tryFetch(url: string, options: RequestInit, decode = true): Promi
   }
   let _tried = 0;
   async function retry() {
+    console.log("TRYING", url, _tried);
     switch (_tried++) {
       case 1:
-        // console.log("Cookie not set or expired, try login...");
+        console.log("Cookie not set or expired, try login...");
         await login();
-        return false;
       case 0:
         return false;
       default:
@@ -154,23 +155,15 @@ async function tryFetch(url: string, options: RequestInit, decode = true): Promi
     if (r.status === 404) {
       continue;
     }
-    // response.buffer is deprecated in node-fetch v3. Though we are using v2 now,
-    // but keep it for compatibility.
-    const buf = Buffer.from(await r.clone().arrayBuffer());
+    const buf = await r.clone().buffer();
     if (r.headers.get('Content-Type')?.includes('application/json')) {
       const text = iconv.decode(buf, 'utf-8');
       const json = JSON.parse(text);
-      if (json?.type === 'relogin') {
+      console.log(json);
+      if (json.status !== 'OK') {
         continue;
       }
-      return decode ? text : r;
-    } else {
-      const text = iconv.decode(buf, 'gb2312');
-      const $ = cheerio.load(text);
-      if ($('[name="accessDeny"]').length > 0) {
-        continue;
-      }
-      return decode ? text : r;
+      return text;
     }
   }
   return null;
@@ -203,10 +196,10 @@ async function getImage(url: string): Promise<string> {
 
 export async function listProblems(setId: string): Promise<OjListProblemsResponse> {
   const courseId = testCourseId;
-  const page = `https://programming.pku.edu.cn/programming/course/${courseId}/showProblemList.do?problemsId=${setId}&type=json`;
+  const page = `https://programming.pku.edu.cn/probset/${setId}/?type=json`;
   return tryFetch(page, {
     headers
-  }).then(text => {
+  }).then(async (text) => {
     if (text === null) {
       return {
         success: false,
@@ -229,155 +222,135 @@ export async function listProblems(setId: string): Promise<OjListProblemsRespons
         reason: "获取题目列表失败，请检查是否拥有访问该课程的权限。"
       };
     }
-    const problems = (json.problemlist.problems as Record<string, unknown>[]).map((p) => ({
-      problemId: p.id as string,
-      title: p.title as string,
-      status: (p.result !== null ? p.result === "AC" ? 'accepted' : 'tried' : 'none') as ('none' | 'accepted' | 'tried')
-    }));
+    const data = new URLSearchParams();
+    data.append('query', 'results');
+    data.append('username', testUserName);
+    data.append('probsetId', setId);
+    const results = await tryFetch(`https://programming.pku.edu.cn/account/query.do`, {
+      method: "POST",
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: data.toString(),
+    });
+    const status: Record<string, string> = {};
+    if (results !== null) {
+      const json = JSON.parse(results);
+      if (json.status === 'OK') {
+        for (const r of json.results) {
+          status[r.id] = (r.result as string).toLowerCase();
+        }
+      }
+    }
+
     return {
       success: true,
       title: "",
-      problems: problems
+      problems: (json.problemlist.problems as any[]).map((p, i) => ({
+        title: p.title,
+        problemId: p.id,
+        status: "none"
+      }))
     };
 
   });
 }
 
-export interface ProblemDescription {
-  title: string;
-  description: string;
-  aboutInput: string;
-  aboutOutput: string;
-  hint: string;
-  input: string;
-  output: string;
-}
 
 export interface SolutionDescription {
   status: string;
   details: string;
 }
 
-export async function getProblem(problemId: string, setId: string) : Promise<OjGetProblemResponse> {
-  const page = `https://programming.pku.edu.cn/programming/problem/${problemId}/show.do?problemsId=${setId}`;
+export async function getProblem(problemId: string, setId: string): Promise<OjGetProblemResponse> {
+  const page = `https://programming.pku.edu.cn/probset/${setId}/${problemId}/?type=json`;
   const text = await tryFetch(page, {
     headers
   });
-  if (text === null) {
-    return {
-      success: false,
-      reason: 'hahaha'
-    };
-  }
-  const $ = cheerio.load(text);
-  const promises: Promise<void>[] = [];
-  $("#problemDescription,#aboutinput,#aboutOutput,#problemHint").find("img").each(function () {
-    const src = $(this).attr("src");
-    if (typeof src === "undefined") return;
-    promises.push(getImage((new URL(src, page)).href).then(base64 => {
-      $(this).attr("src", base64);
-    }));
-  });
-
-  await Promise.all(promises);
-
-  function getRawIo(selector: string) {
-    let text = $(selector).text();
-    const html = $(selector).html();
-    if (!text.includes('\n') && html?.includes('<br>')) {
-      text = html.replace(/<br>/g, '\n');
-    }
-    return text.replace(/\u2003|\u200b|\u00a0|&nbsp;/g, ' ');
-  }
-  const input = getRawIo('#sampleInput');
-  const output = getRawIo('#sampleOutput');
-
-  const r = {
-    success: true as const,
-    title: $("#problemTitle").text(),
-    description: $("#problemDescription").html() ?? "",
-    aboutInput: $("#aboutInput").html() ?? "",
-    aboutOutput: $("#aboutOutput").html() ?? "",
-    sampleInput: input,
-    sampleOutput: output,
-    hint: $("#problemHint").html() ?? "",
+  if (text === null) return {
+    success: false,
+    reason: '??'
   };
-  return r;
+  const json = JSON.parse(text);
+  for (const i in json.problem) {
+    const html = json.problem[i];
+    const $ = cheerio.load(html);
+    const promises: Promise<void>[] = [];
+    $("img").each(function (_) {
+      const src = $(this).attr("src");
+      if (typeof src === "undefined") return;
+      promises.push(getImage((new URL(src, page)).href).then(base64 => {
+        $(this).attr("src", base64);
+      }));
+    });
+    await Promise.all(promises);
+    json.problem[i] = $('body').html();
+  }
+  function getRawIo(text: string) {
+    if (typeof text === "undefined") return "";
+    return text.replace(/\r/, '').replace(/\u2003|\u200b|\u00a0|&nbsp;/g, ' ');
+  }
+  function text2html(text?: string) {
+    if (typeof text === "undefined") return "";
+    text = text.replace(/\r\n/g, "\n");
+    text = text.replace(/<br>/g, "\n");
+    text = text.replace(/<br\/>/g, "\n");
+    text = text.replace(/\s+\n/g, "\n");
+    text = text.replace(/\n+/g, "<br>");
+    text = text.replace(/\s{2}/g, "&nbsp;&nbsp;");
+    return text;
+  }
+  return {
+    success: true,
+    title: json.problem.title,
+    description: text2html(json.problem.description),
+    aboutInput: text2html(json.problem.aboutInput),
+    aboutOutput: text2html(json.problem.aboutOutput),
+    hint: text2html(json.problem.hint),
+    sampleInput: getRawIo(json.problem.sampleInput),
+    sampleOutput: getRawIo(json.problem.sampleOutput)
+  };
 }
 
 export async function submitCode(req: OjSubmitRequest): Promise<OjSubmitResponse> {
-  const HEADER_COMMENT = "// Submitted by clavicode\n\n";
-  const page = `https://programming.pku.edu.cn/programming/problem/submit.do`;
+  const HEADER_COMMENT = "// Submitted by Clavicode";
+  const page = `https://programming.pku.edu.cn/probset/${req.problemSetId}/${req.problemId}/submit.do`;
   const data = new URLSearchParams();
-  data.append('problemId', req.problemId);
-  data.append('problemsId', req.problemSetId);
   data.append('sourceCode', HEADER_COMMENT + req.code);
   data.append('programLanguage', 'C++');
-  const r = await tryFetch(page, {
+  data.append('type', 'json');
+  return tryFetch(page, {
     method: "POST",
     headers: {
       ...headers,
       "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
     },
     body: data.toString()
-  }, false);
-  if (r === null) {
+  }).then(async (r) => {
+    if (r === null) return { success: false, reason: "empty res" };
+    let json: any;
+    try {
+      json = JSON.parse(r);
+    } catch {
+      return { success: false, reason: "json decode" };
+    }
+    if (!json.solution) return { success: false, reason: "no solution" };
     return {
-      success: false,
-      reason: "提交失败，请检查是否拥有访问该课程的权限。"
+      success: true,
+      solutionId: json.solution.id as string
     };
-  }
-  if (r.status !== 200) {
-    return {
-      success: false,
-      reason: "提交失败，可能是编程网格服务器出现问题，请稍后再试。"
-    };
-  }
-  const text = iconv.decode(Buffer.from(await r?.arrayBuffer()), "gb2312");
-  const $ = cheerio.load(text);
-  const solutionId = /solutionId=([0-9a-f]{32})/g.exec(r.url)?.[1];
-  if (!solutionId) {
-    return {
-      success: false,
-      reason: "编程网格拒绝服务。可能的原因是输入了不允许的字符序列。"
-    };
-  }
-  if ($("td.t").length > 0) {
-    const msg = $("td.t").text();
-    return {
-      success: false,
-      reason: msg
-    };
-  }
-  return {
-    success: true,
-    solutionId: solutionId
-  };
+  });
 }
 
-export async function getSolution(solutionId: string) : Promise<OjGetSolutionResponse> {
-  const page = `https://programming.pku.edu.cn/programming/problem/solution.do?solutionId=${solutionId}&type=json`;
-  const text = await tryFetch(page, {
+export async function getSolution(solutionId: string): Promise<OjGetSolutionResponse> {
+  const page = `https://programming.pku.edu.cn/solution/${solutionId}/status.do`;
+  const r = await tryFetch(page, {
     headers
   });
-  if (text === null) {
-    return {
-      success: false,
-      reason: 'permission denied'
-    };
-  }
-  let json: any;
-  try {
-    json = JSON.parse(text);
-  } catch {
-    return {
-      success: false,
-      reason: 'permission denied'
-    };
-  }
+  if (r === null) return { success: false, reason: "null" };
+  const json = JSON.parse(r);
+  if (!json.solution) return { success: false, reason: "no solution" };
   return {
     success: true,
     status: json.solution.result,
-    hint: json.solution.hint
+    hint: json.solution.result === 'Processing' ? '处理中，请稍候' : json.solution.hint
   };
 }

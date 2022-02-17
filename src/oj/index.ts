@@ -20,12 +20,12 @@ import type { OjSubmitRequest, OjSubmitResponse } from '../api';
 import { authenticateToken, setCourse } from '../user_system';
 import { getProblem, getSolution, listProblems, listProblemSets, submitCode } from './fetch';
 
-
 export function handleOj(app: Application) {
 
 
   app.get('/oj/listProblemSets', async (req, res) => {
     const response = await listProblemSets();
+    console.log(response);
     res.json(response);
   });
 
